@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vanilla Task Manager</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="container">
+        <h1>Task Manager</h1>
+        <p class="subtitle">Pure HTML/CSS/JS • localStorage persistence • async storage API</p>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="panel" aria-labelledby="task-form-title">
+        <div class="panel__header">
+          <h2 id="task-form-title">Add / Update Task</h2>
+          <div class="panel__actions">
+            <button id="btnResetForm" class="btn btn--secondary" type="button">Reset</button>
+          </div>
+        </div>
+
+        <form id="taskForm" class="form" novalidate>
+          <input type="hidden" id="taskId" name="taskId" />
+
+          <div class="form__row">
+            <label class="field">
+              <span class="field__label">Title <span class="req">*</span></span>
+              <input id="title" name="title" type="text" maxlength="120" required placeholder="e.g. Pay invoices" />
+            </label>
+
+            <label class="field">
+              <span class="field__label">Due date <span class="req">*</span></span>
+              <input id="dueDate" name="dueDate" type="date" required />
+            </label>
+          </div>
+
+          <div class="form__row">
+            <label class="field">
+              <span class="field__label">Status</span>
+              <select id="status" name="status">
+                <option value="todo">To do</option>
+                <option value="in-progress">In progress</option>
+                <option value="done">Done</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span class="field__label">Priority</span>
+              <select id="priority" name="priority">
+                <option value="low">Low</option>
+                <option value="medium" selected>Medium</option>
+                <option value="high">High</option>
+              </select>
+            </label>
+          </div>
+
+          <label class="field">
+            <span class="field__label">Description</span>
+            <textarea id="description" name="description" rows="3" maxlength="1000" placeholder="Optional details..."></textarea>
+          </label>
+
+          <label class="field">
+            <span class="field__label">Tags</span>
+            <input id="tags" name="tags" type="text" placeholder="Comma-separated, e.g. home, finance" />
+            <span class="field__hint">Tags are stored as an array of non-empty strings.</span>
+          </label>
+
+          <div class="form__footer">
+            <button id="btnSubmit" class="btn btn--primary" type="submit">Save task</button>
+            <button id="btnCancelEdit" class="btn btn--secondary" type="button" hidden>Cancel edit</button>
+          </div>
+        </form>
+
+        <div id="message" class="message" role="status" aria-live="polite" hidden></div>
+      </section>
+
+      <section class="panel" aria-labelledby="controls-title">
+        <div class="panel__header">
+          <h2 id="controls-title">Search & Filters</h2>
+          <div class="panel__actions">
+            <button id="btnClearFilters" class="btn btn--secondary" type="button">Clear</button>
+          </div>
+        </div>
+
+        <div class="controls">
+          <label class="field">
+            <span class="field__label">Search</span>
+            <input id="search" type="search" placeholder="Search title or description..." />
+          </label>
+
+          <div class="controls__grid">
+            <label class="field">
+              <span class="field__label">Status</span>
+              <select id="filterStatus">
+                <option value="">All</option>
+                <option value="todo">To do</option>
+                <option value="in-progress">In progress</option>
+                <option value="done">Done</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span class="field__label">Priority</span>
+              <select id="filterPriority">
+                <option value="">All</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span class="field__label">Tag</span>
+              <input id="filterTag" type="text" placeholder="e.g. finance" />
+            </label>
+
+            <label class="field">
+              <span class="field__label">Due on/before</span>
+              <input id="filterDueBefore" type="date" />
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="task-list-title">
+        <div class="panel__header">
+          <h2 id="task-list-title">Tasks</h2>
+          <div class="panel__actions">
+            <span id="taskCount" class="badge" aria-label="Task count">0</span>
+          </div>
+        </div>
+
+        <div id="taskList" class="task-list" aria-live="polite"></div>
+      </section>
+
+      <footer class="footer">
+        <small>Data is stored locally in your browser (localStorage). No network requests.</small>
+      </footer>
+    </main>
+
+    <script src="./js/storage.js"></script>
+    <script src="./js/taskService.js"></script>
+    <script src="./js/ui.js"></script>
+    <script src="./js/main.js"></script>
+  </body>
+</html>
