@@ -1,6 +1,7 @@
-# Vanilla Task Manager
+# Task Manager
 
-Browser-based task management utility built with **vanilla HTML/CSS/JavaScript** (no frameworks, no external libraries). Data persists in **localStorage** via an **async Promise-based storage layer**.
+Browser-based task management utility built with vanilla HTML/CSS/JavaScript (no frameworks, no external libraries). 
+Data persists in **localStorage** via an async Promise-based storage layer.
 
 ## Features
 
