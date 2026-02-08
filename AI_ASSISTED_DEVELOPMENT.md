@@ -44,4 +44,4 @@ This keeps concerns separated while still working when opening [`velinn-js/index
 ## Notes
 
 - The app is intentionally dependency-free and runs without a build step.
-- The code is structured to look like it was built step-by-step (separate modules, clear comments, explicit validation and error handling).
+-It was built step-by-step (separate modules, clear comments, explicit validation and error handling).

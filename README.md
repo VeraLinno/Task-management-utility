@@ -2,13 +2,6 @@
 
 Browser-based task management utility built with **vanilla HTML/CSS/JavaScript** (no frameworks, no external libraries). Data persists in **localStorage** via an **async Promise-based storage layer**.
 
-## How to run
-
-1. Open [`velinn-js/index.html`](velinn-js/index.html) in any modern browser.
-2. Add tasks using the form.
-
-No build step, no server required.
-
 ## Features
 
 - Create, list, update, delete tasks
