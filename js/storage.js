@@ -8,7 +8,7 @@
 (function (global) {
   "use strict";
 
-  var STORAGE_KEY = "vanilla_task_manager_v1";
+  const STORAGE_KEY = "vanilla_task_manager_v1";
 
   function delay(ms) {
     return new Promise(function (resolve) {
@@ -25,9 +25,9 @@
   }
 
   function readRaw() {
-    var raw = global.localStorage.getItem(STORAGE_KEY);
+    const raw = global.localStorage.getItem(STORAGE_KEY);
     if (!raw) return { tasks: [] };
-    var parsed = safeJsonParse(raw, { tasks: [] });
+    const parsed = safeJsonParse(raw, { tasks: [] });
     if (!parsed || typeof parsed !== "object") return { tasks: [] };
     if (!Array.isArray(parsed.tasks)) parsed.tasks = [];
     return parsed;
@@ -37,7 +37,7 @@
     global.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   }
 
-  var storage = {
+  const storage = {
     key: STORAGE_KEY,
 
     getAllTasks: function () {

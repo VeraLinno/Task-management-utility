@@ -8,8 +8,8 @@
 (function (global) {
   "use strict";
 
-  var ALLOWED_STATUS = ["todo", "in-progress", "done"];
-  var ALLOWED_PRIORITY = ["low", "medium", "high"];
+  const ALLOWED_STATUS = ["todo", "in-progress", "done"];
+  const ALLOWED_PRIORITY = ["low", "medium", "high"];
 
   function AppError(message, code, details) {
     this.name = "AppError";
@@ -20,7 +20,7 @@
   AppError.prototype = Object.create(Error.prototype);
 
   function nowStartOfDayLocal() {
-    var d = new Date();
+    const d = new Date();
     d.setHours(0, 0, 0, 0);
     return d;
   }
@@ -28,13 +28,13 @@
   function parseDateInputToISO(dateInputValue) {
     // date input is YYYY-MM-DD; interpret as local date at 00:00.
     if (typeof dateInputValue !== "string" || !dateInputValue) return null;
-    var parts = dateInputValue.split("-");
+    const parts = dateInputValue.split("-");
     if (parts.length !== 3) return null;
-    var y = Number(parts[0]);
-    var m = Number(parts[1]);
-    var d = Number(parts[2]);
+    const y = Number(parts[0]);
+    const m = Number(parts[1]);
+    const d = Number(parts[2]);
     if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return null;
-    var dt = new Date(y, m - 1, d, 0, 0, 0, 0);
+    const dt = new Date(y, m - 1, d, 0, 0, 0, 0);
     if (Number.isNaN(dt.getTime())) return null;
     // Ensure round-trip matches (guards invalid dates like 2026-02-31)
     if (dt.getFullYear() !== y || dt.getMonth() !== m - 1 || dt.getDate() !== d) return null;
@@ -43,10 +43,10 @@
 
   function isValidDueDateISO(iso) {
     if (typeof iso !== "string" || !iso) return false;
-    var dt = new Date(iso);
+    const dt = new Date(iso);
     if (Number.isNaN(dt.getTime())) return false;
     // Must be today or future (compare by local day)
-    var dueLocal = new Date(dt.getTime());
+    const dueLocal = new Date(dt.getTime());
     dueLocal.setHours(0, 0, 0, 0);
     return dueLocal.getTime() >= nowStartOfDayLocal().getTime();
   }
@@ -54,19 +54,19 @@
   function normalizeTags(tags) {
     if (tags == null) return [];
     if (!Array.isArray(tags)) throw new AppError("Tags must be an array", "VALIDATION_ERROR");
-    var out = [];
-    for (var i = 0; i < tags.length; i++) {
-      var t = tags[i];
+    const out = [];
+    for (let i = 0; i < tags.length; i++) {
+      const t = tags[i];
       if (typeof t !== "string") throw new AppError("Tags must be strings", "VALIDATION_ERROR");
-      var trimmed = t.trim();
+      const trimmed = t.trim();
       if (!trimmed) throw new AppError("Tags cannot be empty", "VALIDATION_ERROR");
       out.push(trimmed);
     }
     // de-dupe (case-insensitive)
-    var seen = Object.create(null);
-    var deduped = [];
-    for (var j = 0; j < out.length; j++) {
-      var key = out[j].toLowerCase();
+    const seen = Object.create(null);
+    const deduped = [];
+    for (let j = 0; j < out.length; j++) {
+      const key = out[j].toLowerCase();
       if (!seen[key]) {
         seen[key] = true;
         deduped.push(out[j]);
@@ -79,21 +79,21 @@
     // mode: 'create' | 'update'
     if (!input || typeof input !== "object") throw new AppError("Invalid task input", "VALIDATION_ERROR");
 
-    var title = typeof input.title === "string" ? input.title.trim() : "";
+    const title = typeof input.title === "string" ? input.title.trim() : "";
     if (!title) throw new AppError("Title is required", "VALIDATION_ERROR");
 
-    var description = "";
+    let description = "";
     if (input.description != null) {
       if (typeof input.description !== "string") throw new AppError("Description must be a string", "VALIDATION_ERROR");
       description = input.description.trim();
     }
 
-    var status = input.status || "todo";
+    const status = input.status || "todo";
     if (ALLOWED_STATUS.indexOf(status) === -1) {
       throw new AppError("Status must be one of: " + ALLOWED_STATUS.join(", "), "VALIDATION_ERROR");
     }
 
-    var priority = input.priority || "medium";
+    const priority = input.priority || "medium";
     if (ALLOWED_PRIORITY.indexOf(priority) === -1) {
       throw new AppError(
         "Priority must be one of: " + ALLOWED_PRIORITY.join(", "),
@@ -101,7 +101,7 @@
       );
     }
 
-    var dueDateISO = input.dueDate;
+    const dueDateISO = input.dueDate;
     if (typeof dueDateISO !== "string" || !dueDateISO) {
       throw new AppError("Due date is required", "VALIDATION_ERROR");
     }
@@ -109,9 +109,9 @@
       throw new AppError("Due date must be today or a future date", "VALIDATION_ERROR");
     }
 
-    var tags = normalizeTags(input.tags);
+    const tags = normalizeTags(input.tags);
 
-    var base = {
+    const base = {
       title: title,
       description: description,
       status: status,
@@ -137,28 +137,28 @@
 
   function sortTasks(tasks) {
     // Sort by due date asc, then priority (high->low), then title
-    var prioRank = { high: 0, medium: 1, low: 2 };
+    const prioRank = { high: 0, medium: 1, low: 2 };
     return tasks
       .slice()
       .sort(function (a, b) {
-        var ad = new Date(a.dueDate).getTime();
-        var bd = new Date(b.dueDate).getTime();
+        const ad = new Date(a.dueDate).getTime();
+        const bd = new Date(b.dueDate).getTime();
         if (ad !== bd) return ad - bd;
-        var ap = prioRank[a.priority] ?? 99;
-        var bp = prioRank[b.priority] ?? 99;
+        const ap = prioRank[a.priority] ?? 99;
+        const bp = prioRank[b.priority] ?? 99;
         if (ap !== bp) return ap - bp;
         return String(a.title).localeCompare(String(b.title));
       });
   }
 
-  var taskService = {
+  const taskService = {
     allowedStatus: ALLOWED_STATUS.slice(),
     allowedPriority: ALLOWED_PRIORITY.slice(),
     parseDateInputToISO: parseDateInputToISO,
 
     list: async function () {
       try {
-        var tasks = await global.AppStorage.getAllTasks();
+        const tasks = await global.AppStorage.getAllTasks();
         return sortTasks(tasks);
       } catch (err) {
         throw new AppError("Failed to load tasks", "STORAGE_ERROR", err);
@@ -166,17 +166,17 @@
     },
 
     getById: async function (id) {
-      var sid = String(id);
-      var tasks = await this.list();
-      for (var i = 0; i < tasks.length; i++) {
+      const sid = String(id);
+      const tasks = await this.list();
+      for (let i = 0; i < tasks.length; i++) {
         if (String(tasks[i].id) === sid) return tasks[i];
       }
       return null;
     },
 
     create: async function (input) {
-      var validated = validateTaskInput(input, "create");
-      var task = {
+      const validated = validateTaskInput(input, "create");
+      const task = {
         id: generateId(),
         title: validated.title,
         description: validated.description,
@@ -187,7 +187,7 @@
       };
 
       try {
-        var tasks = await global.AppStorage.getAllTasks();
+        const tasks = await global.AppStorage.getAllTasks();
         tasks.push(task);
         await global.AppStorage.setAllTasks(tasks);
         return task;
@@ -197,11 +197,11 @@
     },
 
     update: async function (input) {
-      var validated = validateTaskInput(input, "update");
+      const validated = validateTaskInput(input, "update");
       try {
-        var tasks = await global.AppStorage.getAllTasks();
-        var idx = -1;
-        for (var i = 0; i < tasks.length; i++) {
+        const tasks = await global.AppStorage.getAllTasks();
+        let idx = -1;
+        for (let i = 0; i < tasks.length; i++) {
           if (String(tasks[i].id) === String(validated.id)) {
             idx = i;
             break;
@@ -209,7 +209,7 @@
         }
         if (idx === -1) throw new AppError("Task not found", "NOT_FOUND");
 
-        var updated = {
+        const updated = {
           id: String(validated.id),
           title: validated.title,
           description: validated.description,
@@ -229,12 +229,12 @@
     },
 
     remove: async function (id) {
-      var sid = String(id);
+      const sid = String(id);
       try {
-        var tasks = await global.AppStorage.getAllTasks();
-        var next = [];
-        var removed = false;
-        for (var i = 0; i < tasks.length; i++) {
+        const tasks = await global.AppStorage.getAllTasks();
+        const next = [];
+        let removed = false;
+        for (let i = 0; i < tasks.length; i++) {
           if (String(tasks[i].id) === sid) {
             removed = true;
           } else {
@@ -252,14 +252,14 @@
 
     query: async function (criteria) {
       // criteria: { search, status, priority, tag, dueBeforeISO }
-      var c = criteria || {};
-      var tasks = await this.list();
+      const c = criteria || {};
+      const tasks = await this.list();
 
-      var search = typeof c.search === "string" ? c.search.trim().toLowerCase() : "";
-      var status = typeof c.status === "string" ? c.status : "";
-      var priority = typeof c.priority === "string" ? c.priority : "";
-      var tag = typeof c.tag === "string" ? c.tag.trim().toLowerCase() : "";
-      var dueBeforeISO = typeof c.dueBeforeISO === "string" ? c.dueBeforeISO : "";
+      const search = typeof c.search === "string" ? c.search.trim().toLowerCase() : "";
+      const status = typeof c.status === "string" ? c.status : "";
+      const priority = typeof c.priority === "string" ? c.priority : "";
+      const tag = typeof c.tag === "string" ? c.tag.trim().toLowerCase() : "";
+      const dueBeforeISO = typeof c.dueBeforeISO === "string" ? c.dueBeforeISO : "";
 
       if (status && ALLOWED_STATUS.indexOf(status) === -1) {
         throw new AppError("Invalid status filter", "VALIDATION_ERROR");
@@ -268,18 +268,18 @@
         throw new AppError("Invalid priority filter", "VALIDATION_ERROR");
       }
       if (dueBeforeISO) {
-        var dt = new Date(dueBeforeISO);
+        const dt = new Date(dueBeforeISO);
         if (Number.isNaN(dt.getTime())) throw new AppError("Invalid due date filter", "VALIDATION_ERROR");
       }
 
-      var dueBeforeTime = dueBeforeISO ? new Date(dueBeforeISO).getTime() : null;
+      const dueBeforeTime = dueBeforeISO ? new Date(dueBeforeISO).getTime() : null;
 
-      var out = tasks.filter(function (t) {
+      const out = tasks.filter(function (t) {
         if (status && t.status !== status) return false;
         if (priority && t.priority !== priority) return false;
         if (tag) {
-          var has = false;
-          for (var i = 0; i < t.tags.length; i++) {
+          let has = false;
+          for (let i = 0; i < t.tags.length; i++) {
             if (String(t.tags[i]).toLowerCase() === tag) {
               has = true;
               break;
@@ -288,11 +288,11 @@
           if (!has) return false;
         }
         if (dueBeforeTime != null) {
-          var tt = new Date(t.dueDate).getTime();
+          const tt = new Date(t.dueDate).getTime();
           if (tt > dueBeforeTime) return false;
         }
         if (search) {
-          var hay = (t.title + "\n" + (t.description || "")).toLowerCase();
+          const hay = (t.title + "\n" + (t.description || "")).toLowerCase();
           if (hay.indexOf(search) === -1) return false;
         }
         return true;

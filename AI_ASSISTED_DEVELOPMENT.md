@@ -11,6 +11,10 @@ This document captures how AI was used to design and implement the project.
 2. **Implementation approach requested by the prompt**
    - Implement incrementally: storage layer → task service → UI rendering → filters/search.
 
+3. **Modernization request (var → let/const)**
+   - Replace all `var` declarations with `const` when never reassigned, and `let` when reassigned.
+   - Preserve existing logic, structure, comments, and indentation.
+
 ## How AI helped
 
 ### Design / architecture
@@ -44,4 +48,10 @@ This keeps concerns separated while still working when opening [`velinn-js/index
 ## Notes
 
 - The app is intentionally dependency-free and runs without a build step.
--It was built step-by-step (separate modules, clear comments, explicit validation and error handling).
+- It was built step-by-step (separate modules, clear comments, explicit validation and error handling).
+- Variable declarations were modernized across:
+  - [`velinn-js/js/main.js`](velinn-js/js/main.js)
+  - [`velinn-js/js/storage.js`](velinn-js/js/storage.js)
+  - [`velinn-js/js/taskService.js`](velinn-js/js/taskService.js)
+  - [`velinn-js/js/ui.js`](velinn-js/js/ui.js)
+  using `const` for non-reassigned bindings and `let` where reassignment occurs.

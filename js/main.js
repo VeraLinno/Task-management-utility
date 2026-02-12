@@ -14,7 +14,7 @@
     } catch (err) {
       // Last-resort error surface
       console.error(err);
-      var el = document.getElementById("message");
+      const el = document.getElementById("message");
       if (el) {
         el.textContent = "Failed to start app: " + (err && err.message ? err.message : String(err));
         el.classList.add("message--error");

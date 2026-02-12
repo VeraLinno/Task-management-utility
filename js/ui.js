@@ -22,27 +22,27 @@
   }
 
   function formatDueDate(iso) {
-    var d = new Date(iso);
+    const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return "Invalid date";
     // Display as local YYYY-MM-DD
-    var y = d.getFullYear();
-    var m = String(d.getMonth() + 1).padStart(2, "0");
-    var day = String(d.getDate()).padStart(2, "0");
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
     return y + "-" + m + "-" + day;
   }
 
   function isoToDateInputValue(iso) {
-    var d = new Date(iso);
+    const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return "";
-    var y = d.getFullYear();
-    var m = String(d.getMonth() + 1).padStart(2, "0");
-    var day = String(d.getDate()).padStart(2, "0");
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
     return y + "-" + m + "-" + day;
   }
 
   function parseTagsFromInput(text) {
     if (typeof text !== "string") return [];
-    var parts = text
+    const parts = text
       .split(",")
       .map(function (t) {
         return t.trim();
@@ -54,7 +54,7 @@
   }
 
   function setMessage(type, text) {
-    var el = $("message");
+    const el = $("message");
     if (!el) return;
     el.classList.remove("message--ok", "message--error");
     if (type === "ok") el.classList.add("message--ok");
@@ -64,7 +64,7 @@
   }
 
   function clearMessage() {
-    var el = $("message");
+    const el = $("message");
     if (!el) return;
     el.hidden = true;
     el.textContent = "";
@@ -72,10 +72,10 @@
   }
 
   function renderTask(task) {
-    var statusClass = "pill--" + task.status;
-    var prioClass = "pill--" + task.priority;
+    const statusClass = "pill--" + task.status;
+    const prioClass = "pill--" + task.priority;
 
-    var tagsHtml = "";
+    let tagsHtml = "";
     if (task.tags && task.tags.length) {
       tagsHtml = task.tags
         .map(function (t) {
@@ -84,7 +84,7 @@
         .join("");
     }
 
-    var descHtml = task.description
+    const descHtml = task.description
       ? '<p class="task__desc">' + escapeHtml(task.description) + "</p>"
       : "";
 
@@ -125,8 +125,8 @@
   }
 
   function renderTaskList(tasks) {
-    var list = $("taskList");
-    var count = $("taskCount");
+    const list = $("taskList");
+    const count = $("taskCount");
     if (count) count.textContent = String(tasks.length);
 
     if (!list) return;
@@ -140,11 +140,11 @@
   }
 
   function getCriteriaFromControls() {
-    var search = $("search").value;
-    var status = $("filterStatus").value;
-    var priority = $("filterPriority").value;
-    var tag = $("filterTag").value;
-    var dueBefore = $("filterDueBefore").value;
+    const search = $("search").value;
+    const status = $("filterStatus").value;
+    const priority = $("filterPriority").value;
+    const tag = $("filterTag").value;
+    const dueBefore = $("filterDueBefore").value;
 
     return {
       search: search,
@@ -157,12 +157,12 @@
 
   function setFormMode(mode) {
     // mode: 'create' | 'edit'
-    var cancel = $("btnCancelEdit");
+    const cancel = $("btnCancelEdit");
     if (cancel) cancel.hidden = mode !== "edit";
   }
 
   function resetForm() {
-    var form = $("taskForm");
+    const form = $("taskForm");
     form.reset();
     $("taskId").value = "";
     setFormMode("create");
@@ -180,15 +180,15 @@
   }
 
   function getTaskInputFromForm() {
-    var id = $("taskId").value;
-    var title = $("title").value;
-    var description = $("description").value;
-    var status = $("status").value;
-    var priority = $("priority").value;
-    var dueDateInput = $("dueDate").value;
-    var tagsInput = $("tags").value;
+    const id = $("taskId").value;
+    const title = $("title").value;
+    const description = $("description").value;
+    const status = $("status").value;
+    const priority = $("priority").value;
+    const dueDateInput = $("dueDate").value;
+    const tagsInput = $("tags").value;
 
-    var dueDateISO = global.TaskService.parseDateInputToISO(dueDateInput);
+    const dueDateISO = global.TaskService.parseDateInputToISO(dueDateInput);
 
     return {
       id: id ? String(id) : undefined,
@@ -203,8 +203,8 @@
 
   async function refreshList() {
     clearMessage();
-    var criteria = getCriteriaFromControls();
-    var tasks = await global.TaskService.query(criteria);
+    const criteria = getCriteriaFromControls();
+    const tasks = await global.TaskService.query(criteria);
     renderTaskList(tasks);
   }
 
@@ -217,16 +217,16 @@
   }
 
   function bindEvents() {
-    var form = $("taskForm");
-    var list = $("taskList");
+    const form = $("taskForm");
+    const list = $("taskList");
 
     form.addEventListener("submit", async function (e) {
       e.preventDefault();
       clearMessage();
 
       try {
-        var input = getTaskInputFromForm();
-        var isEdit = Boolean(input.id);
+        const input = getTaskInputFromForm();
+        const isEdit = Boolean(input.id);
 
         if (isEdit) {
           await global.TaskService.update(input);
@@ -254,18 +254,18 @@
     });
 
     list.addEventListener("click", async function (e) {
-      var btn = e.target && e.target.closest("button[data-action]");
+      const btn = e.target && e.target.closest("button[data-action]");
       if (!btn) return;
 
-      var action = btn.getAttribute("data-action");
-      var card = btn.closest("article[data-task-id]");
+      const action = btn.getAttribute("data-action");
+      const card = btn.closest("article[data-task-id]");
       if (!card) return;
-      var id = card.getAttribute("data-task-id");
+      const id = card.getAttribute("data-task-id");
 
       try {
         clearMessage();
         if (action === "edit") {
-          var task = await global.TaskService.getById(id);
+          const task = await global.TaskService.getById(id);
           if (!task) throw new global.TaskService.AppError("Task not found", "NOT_FOUND");
           fillFormForEdit(task);
           setMessage("ok", "Editing task: " + task.title);
@@ -273,7 +273,7 @@
         }
 
         if (action === "delete") {
-          var ok = global.confirm("Delete this task? This cannot be undone.");
+          const ok = global.confirm("Delete this task? This cannot be undone.");
           if (!ok) return;
           await global.TaskService.remove(id);
           setMessage("ok", "Task deleted");
@@ -307,13 +307,13 @@
     });
   }
 
-  var ui = {
+  const ui = {
     init: async function () {
       // Set default due date to today
-      var today = new Date();
-      var y = today.getFullYear();
-      var m = String(today.getMonth() + 1).padStart(2, "0");
-      var d = String(today.getDate()).padStart(2, "0");
+      const today = new Date();
+      const y = today.getFullYear();
+      const m = String(today.getMonth() + 1).padStart(2, "0");
+      const d = String(today.getDate()).padStart(2, "0");
       $("dueDate").value = y + "-" + m + "-" + d;
 
       bindEvents();
