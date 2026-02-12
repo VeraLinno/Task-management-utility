@@ -142,9 +142,9 @@ textarea {
   outline: none;
 }
 
-/* Make the native date picker calendar icon visible on dark inputs */
+/* Make the native date picker calendar icon visible on light inputs */
 input[type="date"] {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 /* WebKit/Blink (Chrome/Edge/Safari): force the calendar icon to white */
