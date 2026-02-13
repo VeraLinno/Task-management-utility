@@ -1,0 +1,23 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch Chrome (velinn-js)",
+      "request": "launch",
+      "type": "pwa-chrome",
+      "url": "http://localhost:8080",
+      "webRoot": "${workspaceFolder}/velinn-js",
+      "sourceMaps": true,
+      "smartStep": true,
+      "skipFiles": [
+        "<node_internals>/**",
+        "**/node_modules/**"
+      ],
+      "runtimeArgs": [
+        "--new-window",
+        "--disable-extensions"
+      ],
+      "timeout": 30000
+    }
+  ]
+}
