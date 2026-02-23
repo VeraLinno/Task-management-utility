@@ -1,0 +1,19 @@
+{
+  "name": "visualstudioprojekts",
+  "version": "1.0.0",
+  "description": "A fully-typed Task Manager application migrated from JavaScript to TypeScript with enhanced features including recurring tasks, task dependencies, statistics, and improved search/sort capabilities.",
+  "main": "index.js",
+  "scripts": {
+    "build": "esbuild ts/main.ts --bundle --outfile=dist/main.js --format=esm --target=es2020",
+    "dev": "esbuild ts/main.ts --bundle --outfile=dist/main.js --format=esm --target=es2020 --watch --servedir=.",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "esbuild": "^0.27.3",
+    "typescript": "^5.9.3"
+  }
+}

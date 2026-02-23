@@ -1,57 +1,134 @@
-# AI Assisted Development Log
+# AI-Assisted Development Log
 
-This document captures how AI was used to design and implement the project.
+This document tracks the AI-assisted development of the TypeScript migration project.
 
-## Prompts used
+## Prompt Summary
 
-1. **Initial build request**
-   - Build a browser-based task management utility using pure JavaScript only (no frameworks, no libraries).
-   - Requirements included: task model fields, CRUD, filter/search, modular architecture, async storage, validation, clean UI, and deliverables.
+### Initial Request
+Convert an existing vanilla JavaScript task management project (A1) to TypeScript with the following requirements:
+- Full TypeScript conversion with strict mode
+- Type definitions for all entities
+- Generic utility functions
+- Recurring tasks feature
+- Task dependencies
+- Statistics module
+- Enhanced search & sort
+- Error handling with validation
 
-2. **Implementation approach requested by the prompt**
-   - Implement incrementally: storage layer → task service → UI rendering → filters/search.
+## What AI Generated
 
-3. **Modernization request (var → let/const)**
-   - Replace all `var` declarations with `const` when never reassigned, and `let` when reassigned.
-   - Preserve existing logic, structure, comments, and indentation.
+### 1. Type Definitions (`ts/types.ts`)
+- Created comprehensive type definitions for Task, Status, Priority, Recurrence, TaskDependencies
+- Used TypeScript enums for Status, Priority, RecurrenceFrequency
+- Created discriminated union for ValidationResult
+- Created AppError class with ErrorCode enum
 
-## How AI helped
+### 2. Generic Utilities (`ts/utilities.ts`)
+- `filter<T>()` - Generic filter function
+- `sort<T>()` - Generic sort function  
+- `merge<T>()` - Deep object merge
+- `search<T>()` - Case-insensitive search in specified fields
+- `groupBy<T>()` - Group by key selector
+- `unique<T>()` - Deduplicate by key
+- `paginate<T>()` - Pagination
+- Task-specific: `sortTasks()`, `isTaskOverdue()`, `daysUntilDue()`
+- Date utilities: `parseDateInputToISO()`, `isoToDateInputValue()`, `formatDueDate()`
+- String utilities: `escapeHtml()`, `parseTagsFromInput()`, `normalizeTags()`
 
-### Design / architecture
+### 3. Storage Layer (`ts/storage.ts`)
+- Wrapped localStorage with TypeScript types
+- Added error handling with AppError
+- Implemented IStorage interface
 
-- Proposed a simple modular architecture using IIFEs and globals:
-  - [`velinn-js/js/storage.js`](velinn-js/js/storage.js): async localStorage wrapper
-  - [`velinn-js/js/taskService.js`](velinn-js/js/taskService.js): CRUD + validation + query
-  - [`velinn-js/js/ui.js`](velinn-js/js/ui.js): DOM rendering and event wiring
-  - [`velinn-js/js/main.js`](velinn-js/js/main.js): bootstrap
+### 4. Task Service (`ts/taskService.ts`)
+- Complete CRUD with validation
+- Recurring task logic with next occurrence calculation
+- Task dependency validation
+- Statistics computation
+- Query with filters and sorting
 
-This keeps concerns separated while still working when opening [`velinn-js/index.html`](velinn-js/index.html) directly.
+### 5. UI Module (`ts/ui.ts`)
+- DOM rendering with type safety
+- Event handling
+- Form management
+- Statistics display
 
-### Validation
+### 6. Main Entry (`ts/main.ts`)
+- Simple bootstrap function
+- Global error handling
 
-- Implemented validation rules in [`velinn-js/js/taskService.js`](velinn-js/js/taskService.js):
-  - required title
-  - due date must be valid and today/future
-  - status/priority must be in allowed sets
-  - tags must be an array of non-empty strings (with de-duplication)
+## What Required Manual Fixing
 
-### Async handling
+### 1. Enum Value Access Issues
+**Problem:** Initial type definitions used incorrect syntax for extracting enum values.
+**Fix:** Changed from `Status[keyof typeof Status]` to explicit union type `Status.TODO | Status.IN_PROGRESS | Status.DONE`
 
-- Ensured all storage interactions are async by wrapping localStorage reads/writes in Promises.
-- Used `async/await` in service and UI layers to keep code readable.
+### 2. Discriminated Union Syntax
+**Problem:** ValidationResult type had syntax errors with the discriminated union.
+**Fix:** Used proper TypeScript discriminated union syntax with separate type branches.
 
-### UI
+### 3. Import/Export Issues
+**Problem:** SortDirection imported as type but used as value.
+**Fix:** Changed import to include both type and value imports using `import { SortDirection }` (not `import type`).
 
-- Built a clean, framework-free UI in [`velinn-js/index.html`](velinn-js/index.html) and [`velinn-js/style.css`](velinn-js/style.css).
-- Implemented user-friendly success/error messages and confirmation on delete.
+### 4. Null Handling
+**Problem:** `parseDateInputToISO` returns `null` but criteria expected `undefined`.
+**Fix:** Used nullish coalescing to convert null to undefined.
 
-## Notes
+### 5. HTML Element Type Casting
+**Problem:** `getElementById` returns `HTMLElement | null` but needed input/select properties.
+**Fix:** Added proper type casting with `as HTMLInputElement | null`.
 
-- The app is intentionally dependency-free and runs without a build step.
-- It was built step-by-step (separate modules, clear comments, explicit validation and error handling).
-- Variable declarations were modernized across:
-  - [`velinn-js/js/main.js`](velinn-js/js/main.js)
-  - [`velinn-js/js/storage.js`](velinn-js/js/storage.js)
-  - [`velinn-js/js/taskService.js`](velinn-js/js/taskService.js)
-  - [`velinn-js/js/ui.js`](velinn-js/js/ui.js)
-  using `const` for non-reassigned bindings and `let` where reassignment occurs.
+### 6. Recurrence Frequency Types
+**Problem:** String literals didn't match RecurrenceFrequency enum.
+**Fix:** Used proper enum values or `as const` assertions.
+
+### 7. Strict Null Checks
+**Problem:** Index access on arrays returned possibly undefined.
+**Fix:** Added explicit null checks before accessing properties.
+
+## What Worked Well
+
+1. **Type Definitions** - The initial types.ts was well-structured and comprehensive
+2. **Generic Utilities** - The filter, sort, merge functions work correctly with strong typing
+3. **Error Handling** - AppError class provides consistent error handling across the app
+4. **Recurrence Logic** - The next occurrence calculation handles all frequency types correctly
+5. **Dependencies** - Dependency validation properly blocks completion of dependent tasks
+6. **Statistics** - Provides comprehensive task analytics
+
+## What Didn't Work
+
+1. **ES Modules in Browser** - Without a bundler, ES modules don't work directly in browsers. Need to add build step instructions.
+2. **Date Input Value Binding** - The HTML `<input type="date">` expects YYYY-MM-DD format but our ISO strings need conversion (handled in ui.ts).
+3. **CSS Grid Responsive Issues** - Had to add additional media queries for the new controls grid.
+
+## Files Created/Modified
+
+| File | Action | Lines |
+|------|--------|-------|
+| tsconfig.json | Created | 19 |
+| ts/types.ts | Created | ~390 |
+| ts/utilities.ts | Created | ~490 |
+| ts/storage.ts | Created | ~85 |
+| ts/taskService.ts | Created | ~850 |
+| ts/ui.ts | Created | ~590 |
+| ts/main.ts | Created | ~30 |
+| index.html | Modified | +60 |
+| style.css | Modified | +90 |
+| README.md | Created/Modified | ~250 |
+
+## Notes for Running
+
+The TypeScript files use ES modules (`import ... from "./module.js"`). To run in browser:
+
+1. Install Node.js dependencies
+2. Use a bundler like Vite, Webpack, or esbuild
+3. Or use a simple HTTP server with module support
+
+Example with Vite:
+```bash
+npm create vite@latest . -- --template vanilla-ts
+# Move ts/ files to src/
+npm install
+npm run dev
+```
