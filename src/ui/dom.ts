@@ -240,6 +240,10 @@ function resetForm(): void {
   form.reset();
   const idEl = $('taskId') as HTMLInputElement;
   if (idEl) idEl.value = '';
+  const recurrenceEl = $('recurrence') as HTMLSelectElement;
+  if (recurrenceEl) recurrenceEl.value = 'none';
+  const recurrenceIntervalDiv = $('recurrenceIntervalDiv');
+  if (recurrenceIntervalDiv) recurrenceIntervalDiv.hidden = true;
   setFormMode('create');
 }
 
@@ -258,6 +262,22 @@ function fillFormForEdit(task: Task): void {
   if (dueDateEl) dueDateEl.value = isoToDateInputValue(task.dueDate);
   const tagsEl = $('tags') as HTMLInputElement;
   if (tagsEl) tagsEl.value = (task.tags || []).join(', ');
+  const recurrenceEl = $('recurrence') as HTMLSelectElement;
+  if (recurrenceEl) {
+    recurrenceEl.value = task.recurrence ? task.recurrence.type : 'none';
+  }
+  const recurrenceIntervalEl = $('recurrenceInterval') as HTMLInputElement;
+  if (recurrenceIntervalEl) {
+    recurrenceIntervalEl.value = task.recurrence?.interval ? String(task.recurrence.interval) : '1';
+  }
+  const recurrenceIntervalDiv = $('recurrenceIntervalDiv');
+  if (recurrenceIntervalDiv) {
+    recurrenceIntervalDiv.hidden = !task.recurrence || task.recurrence.type !== 'custom';
+  }
+  const dependenciesEl = $('dependencies') as HTMLInputElement;
+  if (dependenciesEl) {
+    dependenciesEl.value = (task.dependencies || []).join(', ');
+  }
   setFormMode('edit');
 }
 
@@ -269,8 +289,24 @@ function getTaskInputFromForm(): any {
   const priority = ($('priority') as HTMLSelectElement)?.value || '';
   const dueDateInput = ($('dueDate') as HTMLInputElement)?.value || '';
   const tagsInput = ($('tags') as HTMLInputElement)?.value || '';
+  const recurrenceInput = ($('recurrence') as HTMLSelectElement)?.value || '';
+  const recurrenceIntervalInput = ($('recurrenceInterval') as HTMLInputElement)?.value || '';
+  const dependenciesInput = ($('dependencies') as HTMLInputElement)?.value || '';
 
   const dueDateISO = taskService.parseDateInputToISO(dueDateInput);
+
+  let recurrence: any = undefined;
+  if (recurrenceInput && recurrenceInput !== 'none') {
+    recurrence = { type: recurrenceInput };
+    if (recurrenceInput === 'custom') {
+      const interval = parseInt(recurrenceIntervalInput, 10);
+      if (!isNaN(interval) && interval > 0) {
+        recurrence.interval = interval;
+      }
+    }
+  }
+
+  const dependencies = dependenciesInput ? dependenciesInput.split(',').map(s => s.trim()).filter(s => s) : [];
 
   return {
     id: id ? String(id) : undefined,
@@ -280,6 +316,8 @@ function getTaskInputFromForm(): any {
     priority,
     dueDate: dueDateISO,
     tags: parseTagsFromInput(tagsInput),
+    recurrence,
+    dependencies,
   };
 }
 

@@ -13832,7 +13832,7 @@ var taskInputSchema = external_exports.object({
   description: external_exports.string().trim().optional(),
   status: external_exports.enum(ALLOWED_STATUS).default("todo"),
   priority: external_exports.enum(ALLOWED_PRIORITY).default("medium"),
-  dueDate: external_exports.string().nullable().optional().refine((val) => val === null || val === void 0 || isValidDueDateISO(val), "Due date must be today or future"),
+  dueDate: external_exports.string().refine(isValidDueDateISO, "Please enter a valid due date in the future."),
   tags: external_exports.array(tagSchema).default([]),
   dependencies: external_exports.array(external_exports.string()).default([]),
   recurrence: recurrenceSchema.optional()
@@ -13972,16 +13972,13 @@ var taskService = {
   async create(input) {
     const validated = taskInputSchema.parse(input);
     validated.tags = normalizeTags(validated.tags);
-    const defaultDueDate = /* @__PURE__ */ new Date();
-    defaultDueDate.setDate(defaultDueDate.getDate() + 1);
-    const dueDate = validated.dueDate || defaultDueDate.toISOString();
     const task = {
       id: generateId(),
       title: validated.title,
       description: validated.description,
       status: validated.status,
       priority: validated.priority,
-      dueDate,
+      dueDate: validated.dueDate,
       tags: validated.tags,
       dependencies: validated.dependencies,
       recurrence: validated.recurrence,
@@ -14007,16 +14004,13 @@ var taskService = {
       if (validated.status === "done" && !checkDependencies(tasks[idx], tasks)) {
         throw new AppError("Cannot complete task: dependencies not satisfied", "DEPENDENCY_ERROR");
       }
-      const defaultDueDate = /* @__PURE__ */ new Date();
-      defaultDueDate.setDate(defaultDueDate.getDate() + 1);
-      const dueDate = validated.dueDate || tasks[idx].dueDate || defaultDueDate.toISOString();
       const updated = {
         ...tasks[idx],
         title: validated.title,
         description: validated.description,
         status: validated.status,
         priority: validated.priority,
-        dueDate,
+        dueDate: validated.dueDate,
         tags: validated.tags,
         dependencies: validated.dependencies,
         recurrence: validated.recurrence,
@@ -14109,9 +14103,6 @@ function getNextRecurringDate(task, fromDate) {
       while (currentDate <= baseDate) {
         currentDate = new Date(currentDate);
         currentDate.setMonth(currentDate.getMonth() + 1);
-        if (currentDate.getDate() !== targetDayOfMonth) {
-          currentDate.setDate(0);
-        }
       }
       return currentDate;
     case "custom":
@@ -14326,23 +14317,23 @@ function renderUpcomingRecurringTasks(tasks) {
   if (!panel) return;
   const now = /* @__PURE__ */ new Date();
   const upcomingTasks = tasks.filter((task) => {
-    if (!task.recurrence) return false;
-    const nextDate = getNextRecurringDate(task, now);
-    if (!nextDate) return false;
-    const diffTime = nextDate.getTime() - now.getTime();
+    const nextDue = task.recurrence ? getNextRecurringDate(task, now) : new Date(task.dueDate);
+    if (!nextDue) return false;
+    const diffTime = nextDue.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1e3 * 60 * 60 * 24));
     return diffDays <= 7 && diffDays >= 0;
   });
   if (!upcomingTasks.length) {
-    panel.innerHTML = '<div class="recurring-item">No upcoming recurring tasks in the next 7 days.</div>';
+    panel.innerHTML = '<div class="recurring-item">No upcoming tasks in the next 7 days.</div>';
     return;
   }
   panel.innerHTML = upcomingTasks.map((task) => {
-    const nextDate = getNextRecurringDate(task, now);
+    const displayDate = task.recurrence ? getNextRecurringDate(task, now) : new Date(task.dueDate);
+    const recurrenceText = task.recurrence ? ` | Recurs: ${task.recurrence.type}${task.recurrence.interval ? ` (${task.recurrence.interval} days)` : ""}` : "";
     return `
     <div class="recurring-item">
       <div class="recurring-title">${escapeHtml(task.title)}</div>
-      <div class="recurring-next">Due: ${nextDate ? escapeHtml(formatDueDate(nextDate.toISOString())) : "Unknown"} | Recurs: ${task.recurrence?.type}${task.recurrence?.interval ? ` (${task.recurrence.interval} days)` : ""}</div>
+      <div class="recurring-next">Due: ${displayDate ? escapeHtml(formatDueDate(displayDate.toISOString())) : "Unknown"}${recurrenceText}</div>
     </div>
   `;
   }).join("");
@@ -14379,6 +14370,10 @@ function resetForm() {
   form.reset();
   const idEl = $("taskId");
   if (idEl) idEl.value = "";
+  const recurrenceEl = $("recurrence");
+  if (recurrenceEl) recurrenceEl.value = "none";
+  const recurrenceIntervalDiv = $("recurrenceIntervalDiv");
+  if (recurrenceIntervalDiv) recurrenceIntervalDiv.hidden = true;
   setFormMode("create");
 }
 function fillFormForEdit(task) {
@@ -14396,6 +14391,22 @@ function fillFormForEdit(task) {
   if (dueDateEl) dueDateEl.value = isoToDateInputValue(task.dueDate);
   const tagsEl = $("tags");
   if (tagsEl) tagsEl.value = (task.tags || []).join(", ");
+  const recurrenceEl = $("recurrence");
+  if (recurrenceEl) {
+    recurrenceEl.value = task.recurrence ? task.recurrence.type : "none";
+  }
+  const recurrenceIntervalEl = $("recurrenceInterval");
+  if (recurrenceIntervalEl) {
+    recurrenceIntervalEl.value = task.recurrence?.interval ? String(task.recurrence.interval) : "1";
+  }
+  const recurrenceIntervalDiv = $("recurrenceIntervalDiv");
+  if (recurrenceIntervalDiv) {
+    recurrenceIntervalDiv.hidden = !task.recurrence || task.recurrence.type !== "custom";
+  }
+  const dependenciesEl = $("dependencies");
+  if (dependenciesEl) {
+    dependenciesEl.value = (task.dependencies || []).join(", ");
+  }
   setFormMode("edit");
 }
 function getTaskInputFromForm() {
@@ -14406,7 +14417,21 @@ function getTaskInputFromForm() {
   const priority = $("priority")?.value || "";
   const dueDateInput = $("dueDate")?.value || "";
   const tagsInput = $("tags")?.value || "";
+  const recurrenceInput = $("recurrence")?.value || "";
+  const recurrenceIntervalInput = $("recurrenceInterval")?.value || "";
+  const dependenciesInput = $("dependencies")?.value || "";
   const dueDateISO = taskService.parseDateInputToISO(dueDateInput);
+  let recurrence = void 0;
+  if (recurrenceInput && recurrenceInput !== "none") {
+    recurrence = { type: recurrenceInput };
+    if (recurrenceInput === "custom") {
+      const interval = parseInt(recurrenceIntervalInput, 10);
+      if (!isNaN(interval) && interval > 0) {
+        recurrence.interval = interval;
+      }
+    }
+  }
+  const dependencies = dependenciesInput ? dependenciesInput.split(",").map((s) => s.trim()).filter((s) => s) : [];
   return {
     id: id ? String(id) : void 0,
     title,
@@ -14414,7 +14439,9 @@ function getTaskInputFromForm() {
     status,
     priority,
     dueDate: dueDateISO,
-    tags: parseTagsFromInput(tagsInput)
+    tags: parseTagsFromInput(tagsInput),
+    recurrence,
+    dependencies
   };
 }
 
@@ -14433,19 +14460,6 @@ async function refreshList() {
 function friendlyError(err) {
   if (!err) return "Unknown error";
   if (typeof err === "string") return err;
-  if (err.name === "ZodError" && err.issues) {
-    const issues = err.issues;
-    if (issues.length === 1) {
-      const issue2 = issues[0];
-      const field = issue2.path.length > 0 ? issue2.path[issue2.path.length - 1] : "field";
-      return `${field}: ${issue2.message}`;
-    } else {
-      return `Please check the following: ${issues.map((issue2) => {
-        const field = issue2.path.length > 0 ? issue2.path[issue2.path.length - 1] : "field";
-        return `${field} - ${issue2.message}`;
-      }).join(", ")}`;
-    }
-  }
   if (err.name === "AppError" && err.message) return err.message;
   if (err.message) return err.message;
   return "Unexpected error";
@@ -14520,6 +14534,13 @@ function bindEvents() {
   $("filterDueBefore")?.addEventListener("change", onControlsChanged);
   $("sortField")?.addEventListener("change", onControlsChanged);
   $("sortDirection")?.addEventListener("change", onControlsChanged);
+  $("recurrence")?.addEventListener("change", (e) => {
+    const recurrenceEl = e.target;
+    const intervalDiv = $("recurrenceIntervalDiv");
+    if (intervalDiv) {
+      intervalDiv.hidden = recurrenceEl.value !== "custom";
+    }
+  });
   $("btnClearFilters")?.addEventListener("click", () => {
     const searchEl = $("search");
     if (searchEl) searchEl.value = "";

@@ -122,6 +122,15 @@ function bindEvents(): void {
   ($('sortField') as HTMLSelectElement)?.addEventListener('change', onControlsChanged);
   ($('sortDirection') as HTMLSelectElement)?.addEventListener('change', onControlsChanged);
 
+  // Handle recurrence type change to show/hide interval
+  ($('recurrence') as HTMLSelectElement)?.addEventListener('change', (e) => {
+    const recurrenceEl = e.target as HTMLSelectElement;
+    const intervalDiv = $('recurrenceIntervalDiv');
+    if (intervalDiv) {
+      intervalDiv.hidden = recurrenceEl.value !== 'custom';
+    }
+  });
+
   ($('btnClearFilters') as HTMLElement)?.addEventListener('click', () => {
     const searchEl = $('search') as HTMLInputElement;
     if (searchEl) searchEl.value = '';
