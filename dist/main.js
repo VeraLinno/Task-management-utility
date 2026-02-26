@@ -13832,7 +13832,7 @@ var taskInputSchema = external_exports.object({
   description: external_exports.string().trim().optional(),
   status: external_exports.enum(ALLOWED_STATUS).default("todo"),
   priority: external_exports.enum(ALLOWED_PRIORITY).default("medium"),
-  dueDate: external_exports.string().refine(isValidDueDateISO, "Please enter a valid due date in the future."),
+  dueDate: external_exports.string().nullable().refine((val) => val !== null && isValidDueDateISO(val), "Please enter a due date in the future."),
   tags: external_exports.array(tagSchema).default([]),
   dependencies: external_exports.array(external_exports.string()).default([]),
   recurrence: recurrenceSchema.optional()
@@ -14242,6 +14242,8 @@ function renderTask(task) {
           </div>
         </div>
         <div class="task__actions">
+          ${task.status === "todo" ? '<button class="btn btn--primary" type="button" data-action="start">In Progress</button>' : ""}
+          ${task.status === "in-progress" ? '<button class="btn btn--success" type="button" data-action="complete">Done</button>' : ""}
           <button class="btn btn--secondary" type="button" data-action="edit">Edit</button>
           <button class="btn btn--danger" type="button" data-action="delete">Delete</button>
         </div>
@@ -14317,23 +14319,23 @@ function renderUpcomingRecurringTasks(tasks) {
   if (!panel) return;
   const now = /* @__PURE__ */ new Date();
   const upcomingTasks = tasks.filter((task) => {
-    const nextDue = task.recurrence ? getNextRecurringDate(task, now) : new Date(task.dueDate);
-    if (!nextDue) return false;
-    const diffTime = nextDue.getTime() - now.getTime();
+    if (!task.recurrence) return false;
+    const nextDate = getNextRecurringDate(task, now);
+    if (!nextDate) return false;
+    const diffTime = nextDate.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1e3 * 60 * 60 * 24));
     return diffDays <= 7 && diffDays >= 0;
   });
   if (!upcomingTasks.length) {
-    panel.innerHTML = '<div class="recurring-item">No upcoming tasks in the next 7 days.</div>';
+    panel.innerHTML = '<div class="recurring-item">No upcoming recurring tasks in the next 7 days.</div>';
     return;
   }
   panel.innerHTML = upcomingTasks.map((task) => {
-    const displayDate = task.recurrence ? getNextRecurringDate(task, now) : new Date(task.dueDate);
-    const recurrenceText = task.recurrence ? ` | Recurs: ${task.recurrence.type}${task.recurrence.interval ? ` (${task.recurrence.interval} days)` : ""}` : "";
+    const nextDate = getNextRecurringDate(task, now);
     return `
     <div class="recurring-item">
       <div class="recurring-title">${escapeHtml(task.title)}</div>
-      <div class="recurring-next">Due: ${displayDate ? escapeHtml(formatDueDate(displayDate.toISOString())) : "Unknown"}${recurrenceText}</div>
+      <div class="recurring-next">Due: ${nextDate ? escapeHtml(formatDueDate(nextDate.toISOString())) : "Unknown"} | Recurs: ${task.recurrence?.type}${task.recurrence?.interval ? ` (${task.recurrence.interval} days)` : ""}</div>
     </div>
   `;
   }).join("");
@@ -14508,6 +14510,22 @@ function bindEvents() {
         if (!task) throw new taskService.AppError("Task not found", "NOT_FOUND");
         fillFormForEdit(task);
         setMessage("ok", `Editing task: ${task.title}`);
+        return;
+      }
+      if (action === "start") {
+        const task = await taskService.getById(id);
+        if (!task) throw new taskService.AppError("Task not found", "NOT_FOUND");
+        await taskService.update({ ...task, status: "in-progress" });
+        setMessage("ok", `Task "${task.title}" marked as in progress`);
+        await refreshList();
+        return;
+      }
+      if (action === "complete") {
+        const task = await taskService.getById(id);
+        if (!task) throw new taskService.AppError("Task not found", "NOT_FOUND");
+        await taskService.update({ ...task, status: "done" });
+        setMessage("ok", `Task "${task.title}" marked as done`);
+        await refreshList();
         return;
       }
       if (action === "delete") {

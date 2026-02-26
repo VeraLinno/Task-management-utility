@@ -35,6 +35,24 @@ function friendlyError(err: any): string {
   if (!err) return 'Unknown error';
   if (typeof err === 'string') return err;
   if (err.name === 'AppError' && err.message) return err.message;
+
+  // Handle Zod validation errors
+  if (err.name === 'ZodError' && err.issues) {
+    const issues = err.issues;
+    // Check for title error first
+    const titleError = issues.find((issue: any) => issue.path.includes('title'));
+    if (titleError) {
+      return titleError.message;
+    }
+    // Then check for dueDate error
+    const dueDateError = issues.find((issue: any) => issue.path.includes('dueDate'));
+    if (dueDateError) {
+      return dueDateError.message;
+    }
+    // If other errors, return the first one
+    return issues[0]?.message || 'Validation error';
+  }
+
   if (err.message) return err.message;
   return 'Unexpected error';
 }
@@ -92,6 +110,24 @@ function bindEvents(): void {
         if (!task) throw new taskService.AppError('Task not found', 'NOT_FOUND');
         fillFormForEdit(task);
         setMessage('ok', `Editing task: ${task.title}`);
+        return;
+      }
+
+      if (action === 'start') {
+        const task = await taskService.getById(id!);
+        if (!task) throw new taskService.AppError('Task not found', 'NOT_FOUND');
+        await taskService.update({ ...task, status: 'in-progress' });
+        setMessage('ok', `Task "${task.title}" marked as in progress`);
+        await refreshList();
+        return;
+      }
+
+      if (action === 'complete') {
+        const task = await taskService.getById(id!);
+        if (!task) throw new taskService.AppError('Task not found', 'NOT_FOUND');
+        await taskService.update({ ...task, status: 'done' });
+        setMessage('ok', `Task "${task.title}" marked as done`);
+        await refreshList();
         return;
       }
 

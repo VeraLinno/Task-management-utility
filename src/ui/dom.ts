@@ -97,6 +97,8 @@ function renderTask(task: Task): string {
           </div>
         </div>
         <div class="task__actions">
+          ${task.status === 'todo' ? '<button class="btn btn--primary" type="button" data-action="start">In Progress</button>' : ''}
+          ${task.status === 'in-progress' ? '<button class="btn btn--success" type="button" data-action="complete">Done</button>' : ''}
           <button class="btn btn--secondary" type="button" data-action="edit">Edit</button>
           <button class="btn btn--danger" type="button" data-action="delete">Delete</button>
         </div>
