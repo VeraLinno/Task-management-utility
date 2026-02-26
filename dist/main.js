@@ -13832,7 +13832,7 @@ var taskInputSchema = external_exports.object({
   description: external_exports.string().trim().optional(),
   status: external_exports.enum(ALLOWED_STATUS).default("todo"),
   priority: external_exports.enum(ALLOWED_PRIORITY).default("medium"),
-  dueDate: external_exports.string().refine(isValidDueDateISO, "Due date must be today or future"),
+  dueDate: external_exports.string().nullable().optional().refine((val) => val === null || val === void 0 || isValidDueDateISO(val), "Due date must be today or future"),
   tags: external_exports.array(tagSchema).default([]),
   dependencies: external_exports.array(external_exports.string()).default([]),
   recurrence: recurrenceSchema.optional()
@@ -13897,6 +13897,13 @@ function sortTasks(tasks, options) {
       const as = statusRank[a.status];
       const bs = statusRank[b.status];
       if (as !== bs) return options.ascending ? as - bs : bs - as;
+    } else if (options?.field === "title") {
+      const cmp = a.title.localeCompare(b.title);
+      if (cmp !== 0) return options.ascending ? cmp : -cmp;
+    } else if (options?.field === "createdAt") {
+      const ad2 = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bd2 = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      if (ad2 !== bd2) return options.ascending ? ad2 - bd2 : bd2 - ad2;
     }
     const ad = new Date(a.dueDate).getTime();
     const bd = new Date(b.dueDate).getTime();
@@ -13965,13 +13972,16 @@ var taskService = {
   async create(input) {
     const validated = taskInputSchema.parse(input);
     validated.tags = normalizeTags(validated.tags);
+    const defaultDueDate = /* @__PURE__ */ new Date();
+    defaultDueDate.setDate(defaultDueDate.getDate() + 1);
+    const dueDate = validated.dueDate || defaultDueDate.toISOString();
     const task = {
       id: generateId(),
       title: validated.title,
       description: validated.description,
       status: validated.status,
       priority: validated.priority,
-      dueDate: validated.dueDate,
+      dueDate,
       tags: validated.tags,
       dependencies: validated.dependencies,
       recurrence: validated.recurrence,
@@ -13997,13 +14007,16 @@ var taskService = {
       if (validated.status === "done" && !checkDependencies(tasks[idx], tasks)) {
         throw new AppError("Cannot complete task: dependencies not satisfied", "DEPENDENCY_ERROR");
       }
+      const defaultDueDate = /* @__PURE__ */ new Date();
+      defaultDueDate.setDate(defaultDueDate.getDate() + 1);
+      const dueDate = validated.dueDate || tasks[idx].dueDate || defaultDueDate.toISOString();
       const updated = {
         ...tasks[idx],
         title: validated.title,
         description: validated.description,
         status: validated.status,
         priority: validated.priority,
-        dueDate: validated.dueDate,
+        dueDate,
         tags: validated.tags,
         dependencies: validated.dependencies,
         recurrence: validated.recurrence,
@@ -14066,6 +14079,106 @@ var taskService = {
   },
   AppError
 };
+
+// src/utils/genericUtils.ts
+function getNextRecurringDate(task, fromDate) {
+  if (!task.recurrence) return null;
+  const baseDate = fromDate || /* @__PURE__ */ new Date();
+  let currentDate = new Date(task.dueDate);
+  if (currentDate > baseDate) {
+    return currentDate;
+  }
+  switch (task.recurrence.type) {
+    case "daily":
+      while (currentDate <= baseDate) {
+        currentDate = new Date(currentDate.getTime() + 24 * 60 * 60 * 1e3);
+      }
+      return currentDate;
+    case "weekly":
+      const targetDayOfWeek = currentDate.getDay();
+      while (currentDate <= baseDate || currentDate.getDay() !== targetDayOfWeek) {
+        if (currentDate <= baseDate) {
+          currentDate = new Date(currentDate.getTime() + 7 * 24 * 60 * 60 * 1e3);
+        } else {
+          currentDate = new Date(currentDate.getTime() + 7 * 24 * 60 * 60 * 1e3);
+        }
+      }
+      return currentDate;
+    case "monthly":
+      const targetDayOfMonth = currentDate.getDate();
+      while (currentDate <= baseDate) {
+        currentDate = new Date(currentDate);
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        if (currentDate.getDate() !== targetDayOfMonth) {
+          currentDate.setDate(0);
+        }
+      }
+      return currentDate;
+    case "custom":
+      const interval = task.recurrence.interval || 1;
+      while (currentDate <= baseDate) {
+        currentDate = new Date(currentDate.getTime() + interval * 24 * 60 * 60 * 1e3);
+      }
+      return currentDate;
+    default:
+      return null;
+  }
+}
+
+// src/services/statistics.ts
+var StatisticsService = class {
+  async getStatistics() {
+    const tasks = await storage.getAllTasks();
+    const now = /* @__PURE__ */ new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const totalTasks = tasks.length;
+    const tasksByStatus = {
+      todo: 0,
+      "in-progress": 0,
+      done: 0
+    };
+    const tasksByPriority = {
+      low: 0,
+      medium: 0,
+      high: 0
+    };
+    let overdueTasks = 0;
+    let completedTasks = 0;
+    let upcomingRecurringTasks = 0;
+    for (const task of tasks) {
+      tasksByStatus[task.status]++;
+      tasksByPriority[task.priority]++;
+      if (task.status === "done") {
+        completedTasks++;
+      } else {
+        const dueDate = new Date(task.dueDate);
+        if (dueDate < today) {
+          overdueTasks++;
+        }
+      }
+      if (task.recurrence) {
+        const nextDate = getNextRecurringDate(task, now);
+        if (nextDate) {
+          const diffTime = nextDate.getTime() - now.getTime();
+          const diffDays = Math.ceil(diffTime / (1e3 * 60 * 60 * 24));
+          if (diffDays <= 7 && diffDays >= 0) {
+            upcomingRecurringTasks++;
+          }
+        }
+      }
+    }
+    const completionRate = totalTasks > 0 ? completedTasks / totalTasks * 100 : 0;
+    return {
+      totalTasks,
+      tasksByStatus,
+      tasksByPriority,
+      overdueTasks,
+      completionRate,
+      upcomingRecurringTasks
+    };
+  }
+};
+var statisticsService = new StatisticsService();
 
 // src/ui/dom.ts
 function $(id) {
@@ -14160,6 +14273,80 @@ function renderTaskList(tasks) {
   }
   list.innerHTML = tasks.map(renderTask).join("");
 }
+function renderStatistics(stats) {
+  const panel = $("statsPanel");
+  if (!panel) return;
+  panel.innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value">${stats.totalTasks}</div>
+        <div class="stat-label">Total Tasks</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${stats.tasksByStatus.todo}</div>
+        <div class="stat-label">To Do</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${stats.tasksByStatus["in-progress"]}</div>
+        <div class="stat-label">In Progress</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${stats.tasksByStatus.done}</div>
+        <div class="stat-label">Done</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${stats.tasksByPriority.low}</div>
+        <div class="stat-label">Low Priority</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${stats.tasksByPriority.medium}</div>
+        <div class="stat-label">Medium Priority</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${stats.tasksByPriority.high}</div>
+        <div class="stat-label">High Priority</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${stats.overdueTasks}</div>
+        <div class="stat-label">Overdue</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${stats.completionRate.toFixed(1)}%</div>
+        <div class="stat-label">Completion Rate</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${stats.upcomingRecurringTasks}</div>
+        <div class="stat-label">Upcoming Recurring</div>
+      </div>
+    </div>
+  `;
+}
+function renderUpcomingRecurringTasks(tasks) {
+  const panel = $("recurringPanel");
+  if (!panel) return;
+  const now = /* @__PURE__ */ new Date();
+  const upcomingTasks = tasks.filter((task) => {
+    if (!task.recurrence) return false;
+    const nextDate = getNextRecurringDate(task, now);
+    if (!nextDate) return false;
+    const diffTime = nextDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1e3 * 60 * 60 * 24));
+    return diffDays <= 7 && diffDays >= 0;
+  });
+  if (!upcomingTasks.length) {
+    panel.innerHTML = '<div class="recurring-item">No upcoming recurring tasks in the next 7 days.</div>';
+    return;
+  }
+  panel.innerHTML = upcomingTasks.map((task) => {
+    const nextDate = getNextRecurringDate(task, now);
+    return `
+    <div class="recurring-item">
+      <div class="recurring-title">${escapeHtml(task.title)}</div>
+      <div class="recurring-next">Due: ${nextDate ? escapeHtml(formatDueDate(nextDate.toISOString())) : "Unknown"} | Recurs: ${task.recurrence?.type}${task.recurrence?.interval ? ` (${task.recurrence.interval} days)` : ""}</div>
+    </div>
+  `;
+  }).join("");
+}
 function getCriteriaFromControls() {
   const search = $("search")?.value || "";
   const statusStr = $("filterStatus")?.value || "";
@@ -14172,6 +14359,15 @@ function getCriteriaFromControls() {
     priority: priorityStr || void 0,
     tag: tag || void 0,
     dueBeforeISO: dueBefore ? taskService.parseDateInputToISO(dueBefore) || void 0 : void 0
+  };
+}
+function getSortOptionsFromControls() {
+  const fieldStr = $("sortField")?.value || "";
+  const directionStr = $("sortDirection")?.value || "";
+  if (!fieldStr) return void 0;
+  return {
+    field: fieldStr,
+    ascending: directionStr !== "desc"
   };
 }
 function setFormMode(mode) {
@@ -14226,12 +14422,30 @@ function getTaskInputFromForm() {
 async function refreshList() {
   clearMessage();
   const criteria = getCriteriaFromControls();
-  const tasks = await taskService.query(criteria);
+  const sortOptions = getSortOptionsFromControls();
+  const tasks = await taskService.query(criteria, sortOptions);
   renderTaskList(tasks);
+  const stats = await statisticsService.getStatistics();
+  renderStatistics(stats);
+  const allTasks = await taskService.list(sortOptions);
+  renderUpcomingRecurringTasks(allTasks);
 }
 function friendlyError(err) {
   if (!err) return "Unknown error";
   if (typeof err === "string") return err;
+  if (err.name === "ZodError" && err.issues) {
+    const issues = err.issues;
+    if (issues.length === 1) {
+      const issue2 = issues[0];
+      const field = issue2.path.length > 0 ? issue2.path[issue2.path.length - 1] : "field";
+      return `${field}: ${issue2.message}`;
+    } else {
+      return `Please check the following: ${issues.map((issue2) => {
+        const field = issue2.path.length > 0 ? issue2.path[issue2.path.length - 1] : "field";
+        return `${field} - ${issue2.message}`;
+      }).join(", ")}`;
+    }
+  }
   if (err.name === "AppError" && err.message) return err.message;
   if (err.message) return err.message;
   return "Unexpected error";
@@ -14304,6 +14518,8 @@ function bindEvents() {
   $("filterPriority")?.addEventListener("change", onControlsChanged);
   $("filterTag")?.addEventListener("input", onControlsChanged);
   $("filterDueBefore")?.addEventListener("change", onControlsChanged);
+  $("sortField")?.addEventListener("change", onControlsChanged);
+  $("sortDirection")?.addEventListener("change", onControlsChanged);
   $("btnClearFilters")?.addEventListener("click", () => {
     const searchEl = $("search");
     if (searchEl) searchEl.value = "";
@@ -14315,6 +14531,10 @@ function bindEvents() {
     if (tagEl) tagEl.value = "";
     const dueBeforeEl = $("filterDueBefore");
     if (dueBeforeEl) dueBeforeEl.value = "";
+    const sortFieldEl = $("sortField");
+    if (sortFieldEl) sortFieldEl.value = "dueDate";
+    const sortDirectionEl = $("sortDirection");
+    if (sortDirectionEl) sortDirectionEl.value = "asc";
     onControlsChanged();
   });
 }

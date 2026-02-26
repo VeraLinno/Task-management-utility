@@ -1,6 +1,7 @@
 import { Task } from '../models/task.js';
-import { Status, Priority, QueryCriteria } from '../models/types.js';
+import { Status, Priority, QueryCriteria, Statistics, SortOptions, SortField } from '../models/types.js';
 import { taskService } from '../services/taskService.js';
+import { getNextRecurringDate } from '../utils/genericUtils.js';
 
 function $(id: string): HTMLElement | null {
   return document.getElementById(id);
@@ -122,6 +123,85 @@ function renderTaskList(tasks: Task[]): void {
   list.innerHTML = tasks.map(renderTask).join('');
 }
 
+function renderStatistics(stats: Statistics): void {
+  const panel = $('statsPanel');
+  if (!panel) return;
+
+  panel.innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value">${stats.totalTasks}</div>
+        <div class="stat-label">Total Tasks</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${stats.tasksByStatus.todo}</div>
+        <div class="stat-label">To Do</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${stats.tasksByStatus['in-progress']}</div>
+        <div class="stat-label">In Progress</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${stats.tasksByStatus.done}</div>
+        <div class="stat-label">Done</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${stats.tasksByPriority.low}</div>
+        <div class="stat-label">Low Priority</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${stats.tasksByPriority.medium}</div>
+        <div class="stat-label">Medium Priority</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${stats.tasksByPriority.high}</div>
+        <div class="stat-label">High Priority</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${stats.overdueTasks}</div>
+        <div class="stat-label">Overdue</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${stats.completionRate.toFixed(1)}%</div>
+        <div class="stat-label">Completion Rate</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${stats.upcomingRecurringTasks}</div>
+        <div class="stat-label">Upcoming Recurring</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderUpcomingRecurringTasks(tasks: Task[]): void {
+  const panel = $('recurringPanel');
+  if (!panel) return;
+
+  const now = new Date();
+  const upcomingTasks = tasks.filter(task => {
+    if (!task.recurrence) return false;
+    const nextDate = getNextRecurringDate(task, now);
+    if (!nextDate) return false;
+    const diffTime = nextDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays <= 7 && diffDays >= 0;
+  });
+
+  if (!upcomingTasks.length) {
+    panel.innerHTML = '<div class="recurring-item">No upcoming recurring tasks in the next 7 days.</div>';
+    return;
+  }
+
+  panel.innerHTML = upcomingTasks.map(task => {
+    const nextDate = getNextRecurringDate(task, now);
+    return `
+    <div class="recurring-item">
+      <div class="recurring-title">${escapeHtml(task.title)}</div>
+      <div class="recurring-next">Due: ${nextDate ? escapeHtml(formatDueDate(nextDate.toISOString())) : 'Unknown'} | Recurs: ${task.recurrence?.type}${task.recurrence?.interval ? ` (${task.recurrence.interval} days)` : ''}</div>
+    </div>
+  `}).join('');
+}
+
 function getCriteriaFromControls(): QueryCriteria {
   const search = ($('search') as HTMLInputElement)?.value || '';
   const statusStr = ($('filterStatus') as HTMLSelectElement)?.value || '';
@@ -135,6 +215,18 @@ function getCriteriaFromControls(): QueryCriteria {
     priority: priorityStr as Priority || undefined,
     tag: tag || undefined,
     dueBeforeISO: dueBefore ? taskService.parseDateInputToISO(dueBefore) || undefined : undefined,
+  };
+}
+
+function getSortOptionsFromControls(): SortOptions | undefined {
+  const fieldStr = ($('sortField') as HTMLSelectElement)?.value || '';
+  const directionStr = ($('sortDirection') as HTMLSelectElement)?.value || '';
+
+  if (!fieldStr) return undefined;
+
+  return {
+    field: fieldStr as SortField,
+    ascending: directionStr !== 'desc',
   };
 }
 
@@ -196,7 +288,10 @@ export {
   setMessage,
   clearMessage,
   renderTaskList,
+  renderStatistics,
+  renderUpcomingRecurringTasks,
   getCriteriaFromControls,
+  getSortOptionsFromControls,
   resetForm,
   fillFormForEdit,
   getTaskInputFromForm,

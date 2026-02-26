@@ -34,7 +34,7 @@ export interface QueryCriteria {
   dueBeforeISO?: string;
 }
 
-export type SortField = 'dueDate' | 'priority' | 'status';
+export type SortField = 'dueDate' | 'priority' | 'status' | 'title' | 'createdAt';
 
 export interface SortOptions {
   field: SortField;

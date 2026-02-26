@@ -6,7 +6,10 @@ import {
   setMessage,
   clearMessage,
   renderTaskList,
+  renderStatistics,
+  renderUpcomingRecurringTasks,
   getCriteriaFromControls,
+  getSortOptionsFromControls,
   resetForm,
   fillFormForEdit,
   getTaskInputFromForm,
@@ -15,8 +18,17 @@ import {
 async function refreshList(): Promise<void> {
   clearMessage();
   const criteria = getCriteriaFromControls();
-  const tasks = await taskService.query(criteria);
+  const sortOptions = getSortOptionsFromControls();
+  const tasks = await taskService.query(criteria, sortOptions);
   renderTaskList(tasks);
+
+  // Also refresh statistics
+  const stats = await statisticsService.getStatistics();
+  renderStatistics(stats);
+
+  // Also refresh upcoming recurring tasks
+  const allTasks = await taskService.list(sortOptions);
+  renderUpcomingRecurringTasks(allTasks);
 }
 
 function friendlyError(err: any): string {
@@ -107,6 +119,8 @@ function bindEvents(): void {
   ($('filterPriority') as HTMLSelectElement)?.addEventListener('change', onControlsChanged);
   ($('filterTag') as HTMLInputElement)?.addEventListener('input', onControlsChanged);
   ($('filterDueBefore') as HTMLInputElement)?.addEventListener('change', onControlsChanged);
+  ($('sortField') as HTMLSelectElement)?.addEventListener('change', onControlsChanged);
+  ($('sortDirection') as HTMLSelectElement)?.addEventListener('change', onControlsChanged);
 
   ($('btnClearFilters') as HTMLElement)?.addEventListener('click', () => {
     const searchEl = $('search') as HTMLInputElement;
@@ -119,6 +133,10 @@ function bindEvents(): void {
     if (tagEl) tagEl.value = '';
     const dueBeforeEl = $('filterDueBefore') as HTMLInputElement;
     if (dueBeforeEl) dueBeforeEl.value = '';
+    const sortFieldEl = $('sortField') as HTMLSelectElement;
+    if (sortFieldEl) sortFieldEl.value = 'dueDate';
+    const sortDirectionEl = $('sortDirection') as HTMLSelectElement;
+    if (sortDirectionEl) sortDirectionEl.value = 'asc';
     onControlsChanged();
   });
 }

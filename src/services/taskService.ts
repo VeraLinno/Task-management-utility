@@ -31,7 +31,7 @@ const taskInputSchema = z.object({
   description: z.string().trim().optional(),
   status: z.enum(ALLOWED_STATUS).default('todo'),
   priority: z.enum(ALLOWED_PRIORITY).default('medium'),
-  dueDate: z.string().refine(isValidDueDateISO, 'Due date must be today or future'),
+  dueDate: z.string().refine(isValidDueDateISO, 'Please enter a valid due date in the future.'),
   tags: z.array(tagSchema).default([]),
   dependencies: z.array(z.string()).default([]),
   recurrence: recurrenceSchema.optional(),
@@ -104,6 +104,13 @@ function sortTasks(tasks: Task[], options?: SortOptions): Task[] {
       const as = statusRank[a.status];
       const bs = statusRank[b.status];
       if (as !== bs) return options.ascending ? as - bs : bs - as;
+    } else if (options?.field === 'title') {
+      const cmp = a.title.localeCompare(b.title);
+      if (cmp !== 0) return options.ascending ? cmp : -cmp;
+    } else if (options?.field === 'createdAt') {
+      const ad = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bd = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      if (ad !== bd) return options.ascending ? ad - bd : bd - ad;
     }
 
     // Default sort: due date asc, then priority, then title

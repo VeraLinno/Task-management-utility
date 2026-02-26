@@ -1,6 +1,7 @@
 import { Task } from '../models/task.js';
 import { Status, Priority, Statistics } from '../models/types.js';
 import { storage } from './storage.js';
+import { getNextRecurringDate } from '../utils/genericUtils.js';
 
 export class StatisticsService {
   async getStatistics(): Promise<Statistics> {
@@ -39,13 +40,15 @@ export class StatisticsService {
         }
       }
 
-      if (task.recurrence && task.status !== 'done') {
-        // Count as upcoming if due soon (within 7 days)
-        const dueDate = new Date(task.dueDate);
-        const diffTime = dueDate.getTime() - now.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        if (diffDays <= 7 && diffDays >= 0) {
-          upcomingRecurringTasks++;
+      if (task.recurrence) {
+        // Calculate next occurrence and count as upcoming if within 7 days
+        const nextDate = getNextRecurringDate(task, now);
+        if (nextDate) {
+          const diffTime = nextDate.getTime() - now.getTime();
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          if (diffDays <= 7 && diffDays >= 0) {
+            upcomingRecurringTasks++;
+          }
         }
       }
     }
