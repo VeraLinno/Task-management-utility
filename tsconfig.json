@@ -1,22 +1,18 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
+    "target": "ES2020",
     "module": "ESNext",
-    "lib": ["ESNext", "DOM", "DOM.Iterable"],
-    "moduleResolution": "node",
+    "lib": ["ES2020", "DOM"],
     "strict": true,
-    "noEmit": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
+    "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true
+    "resolveJsonModule": true,
+    "outDir": "./dist",
+    "rootDir": "./src"
   },
-  "include": ["ts/**/*.ts"],
-  "exclude": ["node_modules", "js"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

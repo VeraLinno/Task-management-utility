@@ -4,8 +4,8 @@
   "description": "A fully-typed Task Manager application migrated from JavaScript to TypeScript with enhanced features including recurring tasks, task dependencies, statistics, and improved search/sort capabilities.",
   "main": "index.js",
   "scripts": {
-    "build": "esbuild ts/main.ts --bundle --outfile=dist/main.js --format=esm --target=es2020",
-    "dev": "esbuild ts/main.ts --bundle --outfile=dist/main.js --format=esm --target=es2020 --watch --servedir=.",
+    "build": "esbuild src/index.ts --bundle --outfile=dist/main.js --format=esm --target=es2020",
+    "dev": "esbuild src/index.ts --bundle --outfile=dist/main.js --format=esm --target=es2020 --watch --servedir=.",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -15,5 +15,8 @@
   "devDependencies": {
     "esbuild": "^0.27.3",
     "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "zod": "^4.3.6"
   }
 }

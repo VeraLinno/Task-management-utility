@@ -136,54 +136,55 @@ console.log(recurring);
 ## Project Structure
 
 ```
-├── ts/
-│   ├── types.ts         # Type definitions & interfaces
-│   ├── utilities.ts     # Generic utility functions
-│   ├── storage.ts       # Storage layer with error handling
-│   ├── taskService.ts   # Business logic & CRUD
-│   ├── ui.ts            # UI rendering & events
-│   └── main.ts         # Application entry point
+├── src/
+│   ├── models/
+│   │   ├── task.ts      # Task interface
+│   │   └── types.ts     # Type definitions & interfaces
+│   ├── services/
+│   │   ├── storage.ts       # Storage layer with error handling
+│   │   ├── taskService.ts   # Business logic & CRUD
+│   │   └── statistics.ts    # Statistics computation
+│   ├── utils/
+│   │   └── genericUtils.ts  # Generic utility functions
+│   ├── ui/
+│   │   ├── dom.ts       # DOM rendering functions
+│   │   └── events.ts    # Event handling
+│   └── index.ts         # Application entry point
 ├── index.html           # Main HTML with form inputs
 ├── style.css            # Styling (including new features)
-└── tsconfig.json       # TypeScript configuration
+├── tsconfig.json        # TypeScript configuration
+└── package.json         # Dependencies and scripts
 ```
 
 ## Building the Project
 
-Since this uses ES modules, you'll need a bundler or a development server:
+The project uses ES modules and is configured with esbuild for bundling.
 
-### Using Vite (recommended)
+### Development
 ```bash
-npm create vite@latest . -- --template vanilla-ts
-npm install
 npm run dev
 ```
+This starts the development server with hot reload.
 
-### Using esbuild
+### Production Build
 ```bash
-npm install esbuild
-npx esbuild ts/main.ts --bundle --outfile=dist/main.js --format=esm
+npm run build
 ```
+This compiles and bundles the TypeScript to `dist/main.js`.
 
-### Using TypeScript Compiler
+### Type Checking
 ```bash
-# Compile but doesn't bundle (won't work in browser directly)
-npx tsc --project tsconfig.json
+npx tsc --noEmit
 ```
 
 ## Generic Utility Functions
 
-The `utilities.ts` provides these reusable typed functions:
+The `src/utils/genericUtils.ts` provides these reusable typed functions:
 
-- `filter<T>(items, predicate)` - Filter array by predicate
-- `sort<T>(items, comparator)` - Sort with custom comparator
-- `merge<T>(target, source)` - Deep merge objects
-- `search<T>(items, query, fields)` - Case-insensitive search
-- `groupBy<T>(items, keySelector)` - Group by key
-- `unique<T>(items, keySelector)` - Deduplicate by key
-- `paginate<T>(items, page, pageSize)` - Pagination
-- `sortTasks(tasks, config)` - Task-specific sorting
-- `isTaskOverdue(task)` - Check if task is overdue
+- `genericFilter<T>(array, predicate)` - Filter array by predicate
+- `genericSort<T, K>(array, keyFn, ascending)` - Sort array by key function
+- `genericMerge<T, U>(target, source)` - Merge two objects
+- `genericGroupBy<T, K>(array, keyFn)` - Group array by key
 
 ## Error Handling
 
