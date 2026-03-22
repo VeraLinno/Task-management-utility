@@ -14,5 +14,6 @@ FROM nginx:1.27-alpine
 COPY --from=build /app/index.html /usr/share/nginx/html/index.html
 COPY --from=build /app/style.css /usr/share/nginx/html/style.css
 COPY --from=build /app/dist/main.js /usr/share/nginx/html/dist/main.js
+COPY nginx.ts.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
