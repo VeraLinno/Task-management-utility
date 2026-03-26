@@ -191,7 +191,7 @@ This repository now includes two Docker images:
 
 Infrastructure mapping:
 
-- `vera-linno-task-management.proxy.itcollege.ee` -> `192.168.181.101:85`
+- `vera-linno-task-management.proxy.itcollege.ee` -> `192.168.181.101:84`
 - Nginx gateway in `docker-compose.vps.yml` routes:
   - `/ts/` -> `task-manager-ts` container
   - `/js/` -> `task-manager-js` container
@@ -202,8 +202,8 @@ Infrastructure mapping:
 2. Push to GitLab (`git@gitlab.com:<GROUP>/<REPO>.git`)
 3. VPS pulls the repo over SSH key auth
 4. `docker compose -f docker-compose.vps.yml up -d --build` starts the TS container, JS container, and nginx gateway
-5. Gateway listens on VPS `:85` and routes `/ts/` and `/js/` to the correct container
-6. External proxy domain (`vera-linno-task-management.proxy.itcollege.ee`) points to `192.168.181.101:85`
+5. Gateway listens on VPS `:84` and routes `/ts/` and `/js/` to the correct container
+6. External proxy domain (`vera-linno-task-management.proxy.itcollege.ee`) points to `192.168.181.101:84`
 7. Public users open the two URLs listed above
 
 ### 1) Prepare VPS (Ubuntu/Debian)
@@ -255,7 +255,7 @@ docker compose -f docker-compose.vps.yml ps
 ### 4) Firewall (if needed)
 
 ```bash
-sudo ufw allow 85/tcp
+sudo ufw allow 84/tcp
 ```
 
 ### 5) Update Deployments
