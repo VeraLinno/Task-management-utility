@@ -3,24 +3,7 @@ services:
     image: nginx:1.27-alpine
     container_name: task-manager-gateway
     restart: unless-stopped
-    depends_on:
-      - task-manager-ts
-      - task-manager-js
     ports:
       - "${GATEWAY_PORT:-85}:80"
     volumes:
       - ./nginx.vps.conf:/etc/nginx/conf.d/default.conf:ro
-
-  task-manager-ts:
-    build:
-      context: .
-      dockerfile: Dockerfile.ts
-    container_name: task-manager-ts
-    restart: unless-stopped
-
-  task-manager-js:
-    build:
-      context: .
-      dockerfile: Dockerfile.js
-    container_name: task-manager-js
-    restart: unless-stopped
