@@ -15,8 +15,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.ts
-    ports:
-      - "91:80"
     container_name: task-manager-ts
     restart: unless-stopped
 
@@ -24,7 +22,5 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.js
-    ports:
-      - "92:80"
     container_name: task-manager-js
     restart: unless-stopped
