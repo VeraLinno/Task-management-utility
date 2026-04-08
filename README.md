@@ -177,6 +177,53 @@ This compiles and bundles the TypeScript to `dist/main.js`.
 npx tsc --noEmit
 ```
 
+## GitLab CI/CD Pipeline
+
+This project uses a full GitLab pipeline defined in `.gitlab-ci.yml`.
+
+### CI stages
+
+1. `validate`
+  - Validates Docker Compose syntax (`docker compose -f docker-compose.vps.yml config -q`)
+2. `quality`
+  - Type checking (`npm run typecheck`)
+  - Automated tests (`npm run test:ci`)
+3. `build`
+  - Frontend bundle build (`npm run build`)
+4. `docker`
+  - Builds both container images:
+    - `Dockerfile.ts`
+    - `Dockerfile.js`
+
+### CD stage
+
+- `deploy:vps` runs only on `main` branch.
+- Pipeline connects to VPS over SSH and runs:
+
+```bash
+cd <DEPLOY_PATH>
+git fetch --all --prune
+git checkout main
+git pull --ff-only origin main
+cd velinn-js
+docker compose -f docker-compose.vps.yml up -d --build --remove-orphans
+```
+
+### Required GitLab CI Variables
+
+Set these in **GitLab -> Settings -> CI/CD -> Variables**:
+
+- `DEPLOY_HOST` - VPS host/IP
+- `DEPLOY_USER` - SSH username on VPS
+- `DEPLOY_PATH` - Absolute path on VPS where repository is cloned
+- `DEPLOY_SSH_PRIVATE_KEY` - Private key content for deployment user
+- `DEPLOY_SSH_KNOWN_HOSTS` - Output of `ssh-keyscan <DEPLOY_HOST>`
+
+Optional:
+
+- `DEPLOY_BRANCH` - Defaults to `main`
+- `DEPLOY_STRICT_HOST_KEY_CHECKING` - Defaults to `yes`
+
 ## Deploy Both Projects To VPS (Docker)
 
 This repository now includes two Docker images:
