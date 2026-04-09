@@ -30,15 +30,17 @@ cache:
 
 validate:compose:
   stage: validate
-  image: docker:27
-  services:
-    - name: docker:27-dind
-      command: ["--tls=false"]
-  variables:
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_TLS_CERTDIR: ""
+  image: docker/compose:2.29.7
   script:
-    - docker compose -f docker-compose.vps.yml config -q
+    - |
+      if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+        docker compose -f docker-compose.vps.yml config -q
+      elif command -v docker-compose >/dev/null 2>&1; then
+        docker-compose -f docker-compose.vps.yml config -q
+      else
+        echo "Docker Compose is not available in the validate image" >&2
+        exit 1
+      fi
 
 quality:typecheck:
   stage: quality
