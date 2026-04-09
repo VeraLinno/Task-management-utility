@@ -50,7 +50,7 @@ quality:typecheck:
   before_script:
     - npm ci
   script:
-    - npm run typecheck
+    - npm run typecheck:ci
 
 quality:test:
   stage: quality

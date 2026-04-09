@@ -7,8 +7,9 @@
     "build": "esbuild src/index.ts --bundle --outfile=dist/main.js --format=esm --target=es2020",
     "dev": "esbuild src/index.ts --bundle --outfile=dist/main.js --format=esm --target=es2020 --watch --servedir=. --serve=0.0.0.0:8080",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test tests/**/*.test.ts",
-    "test:ci": "node --import tsx --test tests/**/*.test.ts"
+    "typecheck:ci": "tsc -p tsconfig.ci.json --noEmit",
+    "test": "node --import tsx --test tests/all.test.ts",
+    "test:ci": "node --import tsx --test tests/all.test.ts"
   },
   "keywords": [],
   "author": "",

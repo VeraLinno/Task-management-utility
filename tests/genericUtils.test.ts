@@ -8,8 +8,8 @@ import {
   genericMerge,
   genericGroupBy,
   getNextRecurringDate,
-} from '../src/utils/genericUtils.ts';
-import type { Task } from '../src/models/task.ts';
+} from '../src/utils/genericUtils.js';
+import type { Task } from '../src/models/task.js';
 
 function baseTask(overrides: Partial<Task> = {}): Task {
   const now = new Date('2026-04-08T10:00:00.000Z');
