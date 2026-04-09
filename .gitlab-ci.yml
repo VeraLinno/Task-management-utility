@@ -142,7 +142,8 @@ deploy:vps:
   image: alpine:3.20
   needs: []
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "main" && $DEPLOY_HOST && $DEPLOY_USER && $DEPLOY_PATH && $DEPLOY_SSH_PRIVATE_KEY
+    - when: never
   environment:
     name: production
   before_script:
