@@ -30,6 +30,42 @@ cache:
     - node_modules/
   policy: pull-push
 
+.nodejs_bootstrap:
+  before_script:
+    - |
+      if ! command -v npm >/dev/null 2>&1; then
+        NODE_VERSION="${NODE_VERSION:-20.11.1}"
+        NODE_ARCHIVE="node-v${NODE_VERSION}-linux-x64.tar.gz"
+        NODE_CACHE_DIR="${CI_PROJECT_DIR}/.ci/node"
+        NODE_CACHE_ARCHIVE="${CI_PROJECT_DIR}/.ci/${NODE_ARCHIVE}"
+        NODE_URL="https://nodejs.org/dist/v${NODE_VERSION}/${NODE_ARCHIVE}"
+
+        mkdir -p "${CI_PROJECT_DIR}/.ci" "${NODE_CACHE_DIR}"
+
+        if command -v curl >/dev/null 2>&1; then
+          curl -fsSL "${NODE_URL}" -o "${NODE_CACHE_ARCHIVE}"
+        elif command -v wget >/dev/null 2>&1; then
+          wget -qO "${NODE_CACHE_ARCHIVE}" "${NODE_URL}"
+        else
+          echo "Neither curl nor wget is available to install Node.js" >&2
+          exit 1
+        fi
+
+        tar -xzf "${NODE_CACHE_ARCHIVE}" -C "${NODE_CACHE_DIR}" --strip-components=1
+      fi
+
+      export PATH="${CI_PROJECT_DIR}/.ci/node/bin:${PATH}"
+      node --version
+      npm --version
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - node_modules/
+      - .ci/node/
+    policy: pull-push
+
 validate:compose:
   stage: validate
   image: docker/compose:2.29.7
@@ -47,25 +83,25 @@ validate:compose:
 quality:typecheck:
   stage: quality
   image: node:20-alpine
-  before_script:
-    - npm ci
+  extends: .nodejs_bootstrap
   script:
+    - npm ci
     - npm run typecheck:ci
 
 quality:test:
   stage: quality
   image: node:20-alpine
-  before_script:
-    - npm ci
+  extends: .nodejs_bootstrap
   script:
+    - npm ci
     - npm run test:ci
 
 build:frontend:
   stage: build
   image: node:20-alpine
-  before_script:
-    - npm ci
+  extends: .nodejs_bootstrap
   script:
+    - npm ci
     - npm run build
   artifacts:
     when: always
