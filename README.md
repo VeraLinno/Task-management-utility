@@ -181,6 +181,8 @@ npx tsc --noEmit
 
 This project uses a full GitLab pipeline defined in `.gitlab-ci.yml`.
 
+The pipeline expects a GitLab runner with the `shared` tag.
+
 ### CI stages
 
 1. `validate`

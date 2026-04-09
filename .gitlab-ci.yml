@@ -12,6 +12,8 @@ workflow:
 
 default:
   interruptible: true
+  tags:
+    - shared
 
 variables:
   DOCKER_TLS_CERTDIR: "/certs"
