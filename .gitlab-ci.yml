@@ -115,10 +115,24 @@ docker:build-images:
   services:
     - name: docker:27-dind
       command: ["--tls=false"]
-  variables:
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_TLS_CERTDIR: ""
   script:
+    - |
+      if ! command -v docker >/dev/null 2>&1; then
+        echo "Docker CLI is not available on this runner" >&2
+        exit 1
+      fi
+
+      if docker info >/dev/null 2>&1; then
+        echo "Using local Docker daemon"
+      elif docker -H tcp://docker:2375 info >/dev/null 2>&1; then
+        export DOCKER_HOST="tcp://docker:2375"
+        export DOCKER_TLS_CERTDIR=""
+        echo "Using Docker-in-Docker daemon at ${DOCKER_HOST}"
+      else
+        echo "No reachable Docker daemon (local or dind)" >&2
+        exit 1
+      fi
+
     - docker build -f Dockerfile.ts -t task-manager-ts:ci .
     - docker build -f Dockerfile.js -t task-manager-js:ci .
     - docker image ls --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}"
