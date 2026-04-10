@@ -3,26 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Task Manager</title>
+    <title>Task Manager (JS)</title>
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
     <header class="app-header">
       <div class="container">
-        <h1>Task Manager</h1>
+        <h1>Task Manager (JS)</h1>
       </div>
     </header>
 
     <main class="container">
-      <!-- Statistics Panel -->
-      <section class="panel" aria-labelledby="stats-title">
-        <div class="panel__header">
-          <h2 id="stats-title">Statistics</h2>
-        </div>
-        <div id="statsPanel" class="stats-panel"></div>
-      </section>
-
-      <!-- Add/Update Task Form -->
       <section class="panel" aria-labelledby="task-form-title">
         <div class="panel__header">
           <h2 id="task-form-title">Add / Update Task</h2>
@@ -71,33 +62,9 @@
             <textarea id="description" name="description" rows="3" maxlength="1000" placeholder="Optional details..."></textarea>
           </label>
 
-          <div class="form__row">
-            <label class="field">
-              <span class="field__label">Tags</span>
-              <input id="tags" name="tags" type="text" placeholder="Comma-separated, e.g. home, finance" />
-              <span class="field__hint">Tags are stored as an array of non-empty strings.</span>
-            </label>
-
-            <label class="field">
-              <span class="field__label">Recurrence</span>
-              <select id="recurrence" name="recurrence">
-                <option value="none">No recurrence</option>
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-                <option value="custom">Custom...</option>
-              </select>
-              <div id="recurrenceIntervalDiv" class="field" hidden>
-                <span class="field__label">Every X days</span>
-                <input id="recurrenceInterval" name="recurrenceInterval" type="number" min="1" value="1" />
-              </div>
-            </label>
-          </div>
-
           <label class="field">
-            <span class="field__label">Dependencies (Task IDs)</span>
-            <input id="dependencies" name="dependencies" type="text" placeholder="Comma-separated task IDs" />
-            <span class="field__hint">Enter task IDs that must be completed first. Cannot mark done until dependencies are complete.</span>
+            <span class="field__label">Tags</span>
+            <input id="tags" name="tags" type="text" placeholder="Comma-separated, e.g. home, finance" />
           </label>
 
           <div class="form__footer">
@@ -109,7 +76,6 @@
         <div id="message" class="message" role="status" aria-live="polite" hidden></div>
       </section>
 
-      <!-- Search & Filters -->
       <section class="panel" aria-labelledby="controls-title">
         <div class="panel__header">
           <h2 id="controls-title">Search & Filters</h2>
@@ -157,39 +123,9 @@
               <input id="filterDueBefore" type="date" />
             </label>
           </div>
-
-          <div class="controls__grid">
-            <label class="field">
-              <span class="field__label">Sort By</span>
-              <select id="sortField">
-                <option value="dueDate">Due Date</option>
-                <option value="priority">Priority</option>
-                <option value="status">Status</option>
-                <option value="title">Title</option>
-                <option value="createdAt">Created</option>
-              </select>
-            </label>
-
-            <label class="field">
-              <span class="field__label">Direction</span>
-              <select id="sortDirection">
-                <option value="asc">Ascending</option>
-                <option value="desc">Descending</option>
-              </select>
-            </label>
-          </div>
         </div>
       </section>
 
-      <!-- Recurring Tasks Panel -->
-      <section class="panel" aria-labelledby="recurring-title">
-        <div class="panel__header">
-          <h2 id="recurring-title">Upcoming Recurring Tasks</h2>
-        </div>
-        <div id="recurringPanel" class="recurring-panel"></div>
-      </section>
-
-      <!-- Task List -->
       <section class="panel" aria-labelledby="task-list-title">
         <div class="panel__header">
           <h2 id="task-list-title">Tasks</h2>
@@ -200,13 +136,11 @@
 
         <div id="taskList" class="task-list" aria-live="polite"></div>
       </section>
-
-      <footer class="footer">
-        <small>Data is stored locally in your browser (localStorage). No network requests.</small>
-      </footer>
     </main>
 
-    <!-- Compiled TypeScript application (ES Modules) -->
-    <script type="module" src="./dist/main.js?v=20260322"></script>
+    <script src="./js/storage.js"></script>
+    <script src="./js/taskService.js"></script>
+    <script src="./js/ui.js"></script>
+    <script src="./js/main.js"></script>
   </body>
 </html>

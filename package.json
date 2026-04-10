@@ -5,15 +5,20 @@
   "main": "index.js",
   "scripts": {
     "build": "esbuild src/index.ts --bundle --outfile=dist/main.js --format=esm --target=es2020",
-    "dev": "esbuild src/index.ts --bundle --outfile=dist/main.js --format=esm --target=es2020 --watch --servedir=.",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "esbuild src/index.ts --bundle --outfile=dist/main.js --format=esm --target=es2020 --watch --servedir=. --serve=0.0.0.0:8080",
+    "typecheck": "tsc --noEmit",
+    "typecheck:ci": "tsc -p tsconfig.ci.json --noEmit",
+    "test": "node --import tsx --test tests/all.test.ts",
+    "test:ci": "node --import tsx --test tests/all.test.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
   "devDependencies": {
+    "@types/node": "^22.15.30",
     "esbuild": "^0.27.3",
+    "tsx": "^4.20.6",
     "typescript": "^5.9.3"
   },
   "dependencies": {

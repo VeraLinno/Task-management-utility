@@ -177,6 +177,143 @@ This compiles and bundles the TypeScript to `dist/main.js`.
 npx tsc --noEmit
 ```
 
+## GitLab CI/CD Pipeline
+
+This project uses a full GitLab pipeline defined in `.gitlab-ci.yml`.
+
+The pipeline expects a GitLab runner with the `shared` tag.
+
+### CI stages
+
+1. `validate`
+  - Validates Docker Compose syntax (`docker compose -f docker-compose.vps.yml config -q`)
+2. `quality`
+  - Type checking (`npm run typecheck`)
+  - Automated tests (`npm run test:ci`)
+3. `build`
+  - Frontend bundle build (`npm run build`)
+4. `docker`
+  - Builds both container images:
+    - `Dockerfile.ts`
+    - `Dockerfile.js`
+
+### CD stage
+
+- `deploy:vps` runs only on `main` branch.
+- Pipeline connects to VPS over SSH and runs:
+
+```bash
+cd <DEPLOY_PATH>
+git fetch --all --prune
+git checkout main
+git pull --ff-only origin main
+cd velinn-js
+docker compose -f docker-compose.vps.yml up -d --build --remove-orphans
+```
+
+### Required GitLab CI Variables
+
+Set these in **GitLab -> Settings -> CI/CD -> Variables**:
+
+- `DEPLOY_HOST` - VPS host/IP
+- `DEPLOY_USER` - SSH username on VPS
+- `DEPLOY_PATH` - Absolute path on VPS where repository is cloned
+- `DEPLOY_SSH_PRIVATE_KEY` - Private key content for deployment user
+- `DEPLOY_SSH_KNOWN_HOSTS` - Output of `ssh-keyscan <DEPLOY_HOST>`
+
+Optional:
+
+- `DEPLOY_BRANCH` - Defaults to `main`
+- `DEPLOY_STRICT_HOST_KEY_CHECKING` - Defaults to `yes`
+
+## Deploy Both Projects To VPS (Docker)
+
+This repository now includes two Docker images:
+
+- **TypeScript app container** via `Dockerfile.ts` (serves the TS build)
+- **Legacy JavaScript app container** via `Dockerfile.js` (serves `index-js.html` + `js/` files)
+
+### Public URLs (after deploy)
+
+- TypeScript app: `http://vera-linno-task-management.proxy.itcollege.ee/ts/`
+- JavaScript app: `http://vera-linno-task-management.proxy.itcollege.ee/js/`
+
+Infrastructure mapping:
+
+- `vera-linno-task-management.proxy.itcollege.ee` -> `192.168.181.101:83`
+- Nginx gateway in `docker-compose.vps.yml` routes:
+  - `/ts/` -> `task-manager-ts` container
+  - `/js/` -> `task-manager-js` container
+
+### Full Path To Public URL
+
+1. Local code in this repo (`velinn-js/`)
+2. Push to GitLab (`git@gitlab.com:<GROUP>/<REPO>.git`)
+3. VPS pulls the repo over SSH key auth
+4. `docker compose -f docker-compose.vps.yml up -d --build` starts the TS container, JS container, and nginx gateway
+5. Gateway listens on VPS `:83` and routes `/ts/` and `/js/` to the correct container
+6. External proxy domain (`vera-linno-task-management.proxy.itcollege.ee`) points to `192.168.181.101:83`
+7. Public users open the two URLs listed above
+
+### 1) Prepare VPS (Ubuntu/Debian)
+
+```bash
+sudo apt update
+sudo apt install -y ca-certificates curl gnupg
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo usermod -aG docker $USER
+```
+
+Log out/in once after `usermod` so `docker` works without `sudo`.
+
+### 2) Add SSH Key To GitLab
+
+On VPS:
+
+```bash
+ssh-keygen -t ed25519 -C "vps-deploy" -f ~/.ssh/id_ed25519 -N ""
+cat ~/.ssh/id_ed25519.pub
+```
+
+In GitLab:
+
+1. Go to **User Settings -> SSH Keys**
+2. Paste the VPS public key
+3. Save
+
+Test access from VPS:
+
+```bash
+ssh -T git@gitlab.com
+```
+
+### 3) Deploy Containers On VPS
+
+```bash
+git clone git@gitlab.com:<GROUP>/<REPO>.git
+cd <REPO>/velinn-js
+docker compose -f docker-compose.vps.yml up -d --build
+docker compose -f docker-compose.vps.yml ps
+```
+
+### 4) Firewall (if needed)
+
+```bash
+sudo ufw allow 83/tcp
+```
+
+### 5) Update Deployments
+
+```bash
+git pull
+docker compose -f docker-compose.vps.yml up -d --build
+```
+
 ## Generic Utility Functions
 
 The `src/utils/genericUtils.ts` provides these reusable typed functions:

@@ -14176,7 +14176,7 @@ function $(id) {
   return document.getElementById(id);
 }
 function escapeHtml(text) {
-  return String(text).replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">").replace(/"/g, '"').replace(/'/g, "&#039;");
+  return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 function formatDueDate(iso) {
   const d = new Date(iso);
@@ -14463,6 +14463,18 @@ function friendlyError(err) {
   if (!err) return "Unknown error";
   if (typeof err === "string") return err;
   if (err.name === "AppError" && err.message) return err.message;
+  if (err.name === "ZodError" && err.issues) {
+    const issues = err.issues;
+    const titleError = issues.find((issue2) => issue2.path.includes("title"));
+    if (titleError) {
+      return titleError.message;
+    }
+    const dueDateError = issues.find((issue2) => issue2.path.includes("dueDate"));
+    if (dueDateError) {
+      return dueDateError.message;
+    }
+    return issues[0]?.message || "Validation error";
+  }
   if (err.message) return err.message;
   return "Unexpected error";
 }
